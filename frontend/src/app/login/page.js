@@ -23,12 +23,19 @@ export default function Login() {
       return;
     }
     
-    const response = await login(username, password);
-    if (response !== true) {
-      setError(response); // Show actual error from API
+    try {
+      const response = await login(username, password);
+      if (response !== true) {
+        // Display the error message from the API
+        setError(response || 'Invalid username or password. Please try again.');
+      }
+    } catch (error) {
+      // Handle any unexpected errors
+      setError('An error occurred during login. Please try again.');
+      console.error('Login error:', error);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
@@ -45,7 +52,7 @@ export default function Login() {
         
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
-            <p className="font-medium">Error</p>
+            <p className="font-medium">Login Error</p>
             <p>{error}</p>
           </div>
         )}

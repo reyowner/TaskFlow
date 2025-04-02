@@ -12,11 +12,10 @@ from pydantic import BaseModel
 # Secret key to sign JWT tokens
 SECRET_KEY = "your-secret-key-change-in-production"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 20
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# ✅ FIXED: Corrected tokenUrl (Must match FastAPI's OAuth2 token route)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/token")
 
 class TokenData(BaseModel):

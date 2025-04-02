@@ -34,14 +34,28 @@ export default function Register() {
       return;
     }
     
-    const result = await register(username, email, password);
-    if (result === true) {
-      router.push('/login');
-    } else {
-      setError(result);
+    // Minimum password strength validation
+    if (passwordStrength < 2) {
+      setError('Password is too weak. Please create a stronger password.');
+      setLoading(false);
+      return;
     }
     
-    setLoading(false);
+    try {
+      const result = await register(username, email, password);
+      if (result === true) {
+        router.push('/login');
+      } else {
+        // Handle different registration errors
+        setError(result || 'Registration failed. Please try again with different credentials.');
+      }
+    } catch (error) {
+      // Handle unexpected errors
+      console.error('Registration error:', error);
+      setError('An error occurred during registration. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const checkPasswordStrength = (password) => {
@@ -74,7 +88,7 @@ export default function Register() {
         
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
-            <p className="font-medium">Error</p>
+            <p className="font-medium">Registration Error</p>
             <p>{error}</p>
           </div>
         )}
@@ -156,6 +170,9 @@ export default function Register() {
                     {passwordStrength === 3 && "Good"}
                     {passwordStrength === 4 && "Strong"}
                   </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Password must be at least 8 characters with uppercase, number, and special character
+                  </p>
                 </div>
               )}
             </div>
@@ -195,7 +212,7 @@ export default function Register() {
           
           <button
             type="submit"
-            disabled={loading || (password !== confirmPassword && confirmPassword)}
+            
             className="btn-primary w-full flex justify-center"
           >
             {loading ? (
