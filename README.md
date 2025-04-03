@@ -55,12 +55,8 @@ taskflow_project/
 │       │   └── dashboard/
 │       │       └── page.js
 │       ├── components/
-│       │   ├── AuthForm.js
 │       │   ├── ClientLayout.js
 │       │   ├── Navbar.js
-│       │   ├── TaskForm.js
-│       │   ├── TaskList.js
-│       │   └── TaskItem.js
 │       ├── contexts/
 │       │   └── AuthContext.js
 │       ├── styles/
