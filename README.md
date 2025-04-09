@@ -136,12 +136,19 @@ npm run dev
 
 ## Using Docker for Easy Deployment
 You can run both frontend and backend using Docker Compose.
-# 1. Build and start the containers:
+
+# 1. Clone the repository
+```bash
+git clone https://github.com/reyowner/TaskFlow.git
+cd TaskFlow
+```
+
+# 2. Build and start the containers:
 ```bash
 docker-compose up --build
 ```
 
-# 2. Stop the containers:
+# 3. Stop the containers:
 ```bash
 docker-compose down
 ```
