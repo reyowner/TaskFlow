@@ -147,9 +147,3 @@ docker-compose down
 ```
 
 ---
-
-## 👨‍💻 Contributors
-# @reyowner - Project Owner
-# @lzulaybar - Contributor
-
----
