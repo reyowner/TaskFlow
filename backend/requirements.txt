@@ -1,8 +1,8 @@
-fastapi==0.108.0
-uvicorn==0.27.0
-sqlalchemy==2.0.25
-pydantic==2.6.0
-python-jose==3.3.0
-passlib==1.7.4
-python-multipart==0.0.6
-bcrypt==4.1.2
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+python-jose
+passlib
+python-multipart
+bcrypt
