@@ -79,9 +79,9 @@ taskflow_project/
 ---
 
 ## Setup & Installation
-Make sure Python is already installed in your computer. If not, download it here: [https://www.python.org/downloads/](https://www.python.org/downloads/) and make sure to check the "Add Python into environment variables" during installation.
-Make sure Rust is also installed in your computer. If not, download it here: [https://rustup.rs/](https://rustup.rs/).
-Then, open your Command Prompt and start the steps below. 
+- Make sure Python is already installed in your computer. If not, download it here: [https://www.python.org/downloads/](https://www.python.org/downloads/) and make sure to check the "Add Python into environment variables" during installation.
+- Make sure Rust is also installed in your computer. If not, download it here: [https://rustup.rs/](https://rustup.rs/).
+- Then, open your Command Prompt and start the steps below. 
 
 # 1. Clone the repository
 ```bash
