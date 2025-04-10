@@ -110,6 +110,9 @@ pip install -r requirements.txt
 ```
 Run the backend server:
 ```bash
+venv\Scripts\activate
+```
+```bash
 uvicorn main:app --reload
 ```
 
