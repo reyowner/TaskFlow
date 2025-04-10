@@ -1,4 +1,3 @@
-// src/components/ClientLayout.js
 "use client";
 
 import React, { useEffect } from "react";
