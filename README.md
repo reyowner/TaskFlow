@@ -79,6 +79,9 @@ taskflow_project/
 ---
 
 ## Setup & Installation
+Make sure Python is already installed in your computer. If not, download it here: [https://www.python.org/downloads/](https://www.python.org/downloads/) and make sure to check the "Add Python into environment variables" during installation.
+Make sure Rust is also installed in your computer. If not, download it here: [https://rustup.rs/](https://rustup.rs/).
+Then, open your Command Prompt and start the steps below. 
 
 # 1. Clone the repository
 ```bash
@@ -86,7 +89,20 @@ git clone https://github.com/reyowner/TaskFlow.git
 cd TaskFlow
 ```
 
-# 2. Backend Setup (FastAPI)
+# 2. Frontend Setup (Next.js)
+Install dependencies:
+```bash
+cd frontend
+npm install
+```
+Run the frontend server:
+```bash
+npm run dev
+```
+
+# The frontend should now be running at [http://localhost:3000](http://localhost:3000)
+
+# 3. Backend Setup (FastAPI)
 Install dependencies:
 ```bash
 cd backend
@@ -114,23 +130,12 @@ To see a list of all registered users, visit:
 ]
 ```
 
-# 4. Explore API Endpoints
+# 5. Explore API Endpoints
 FastAPI provides interactive API documentation:
 - Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
 - ReDoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
-# 5. Frontend Setup (Next.js)
-Install dependencies:
-```bash
-cd frontend
-npm install
-```
-Run the frontend server:
-```bash
-npm run dev
-```
-
-# The frontend should now be running at [http://localhost:3000](http://localhost:3000)
+# Now, the web application is now fully functional with the frontend and backend running locally.
 
 ---
 
