@@ -5,4 +5,8 @@ pydantic
 python-jose
 passlib
 python-multipart
+<<<<<<< HEAD
 bcrypt
+=======
+bcrypt
+>>>>>>> 69042634b63265dc0d91db2981fad8db79295417
