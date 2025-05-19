@@ -84,7 +84,24 @@ export const registerUser = async (userData) => {
 
 // Login a user
 export const loginUser = async (credentials) => {
-  const data = await apiRequest("/api/users/token", "POST", credentials);
+  const formData = new URLSearchParams();
+  formData.append('username', credentials.email); // OAuth2 expects 'username' field
+  formData.append('password', credentials.password);
+
+  const response = await fetch(`${API_BASE_URL}/api/users/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || "An error occurred");
+  }
+
+  const data = await response.json();
   if (data.access_token) {
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user", JSON.stringify(data.user));
