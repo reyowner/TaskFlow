@@ -77,9 +77,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const data = await loginUser({ email, password });
-      setUser(data.user);
-      router.push("/dashboard");
-      return true;
+      if (data.user) {
+        setUser(data.user);
+        router.push("/dashboard");
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error("Login error:", error);
       return false;
