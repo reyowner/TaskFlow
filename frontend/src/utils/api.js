@@ -1,13 +1,11 @@
-// Helper functions for API calls
-
-const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = "https://taskflow-ru9t.onrender.com";
 
 // Utility function for API requests with authentication
 const apiRequest = async (endpoint, method = "GET", body = null) => {
   // Ensure the token is properly retrieved from localStorage
   const token = localStorage.getItem("token");
 
-  if (!token) {
+  if (!token && endpoint !== "/api/users/register" && endpoint !== "/api/users/login") {
     console.error("No authentication token found. Redirecting to login...");
     window.location.href = "/login";
     return;
@@ -15,8 +13,11 @@ const apiRequest = async (endpoint, method = "GET", body = null) => {
 
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
   };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const options = {
     method,
@@ -50,14 +51,14 @@ const apiRequest = async (endpoint, method = "GET", body = null) => {
   }
 };
 
-// Fetch all tasks (ensure token exists before calling)
+// Fetch all tasks
 export const fetchTasks = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
     console.warn("Cannot fetch tasks: No token found.");
     return [];
   }
-  return apiRequest("/tasks");
+  return apiRequest("/api/tasks");
 };
 
 // Create a new task
@@ -67,11 +68,26 @@ export const createTask = async (taskData) => {
     console.warn("Cannot create task: No token found.");
     return null;
   }
-  return apiRequest("/tasks", "POST", taskData);
+  return apiRequest("/api/tasks", "POST", taskData);
 };
 
 // Update an existing task
-export const updateTask = async (taskId, taskData) => apiRequest(`/tasks/${taskId}`, "PUT", taskData);
+export const updateTask = async (taskId, taskData) => apiRequest(`/api/tasks/${taskId}`, "PUT", taskData);
 
 // Delete a task
-export const deleteTask = async (taskId) => apiRequest(`/tasks/${taskId}`, "DELETE");
+export const deleteTask = async (taskId) => apiRequest(`/api/tasks/${taskId}`, "DELETE");
+
+// Register a user
+export const registerUser = async (userData) => {
+  return apiRequest("/api/users/register", "POST", userData);
+};
+
+// Login a user
+export const loginUser = async (credentials) => {
+  const data = await apiRequest("/api/users/login", "POST", credentials);
+  if (data.access_token) {
+    localStorage.setItem("token", data.access_token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+  }
+  return data;
+};

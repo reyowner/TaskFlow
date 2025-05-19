@@ -2,6 +2,7 @@
 
 import { createContext, useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
+import { loginUser, registerUser } from "../utils/api";
 
 const AuthContext = createContext({
   user: null,
@@ -50,7 +51,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       console.log("Validating token...");
-      const response = await fetch("http://localhost:8000/api/users/me", {
+      const response = await fetch("https://taskflow-ru9t.onrender.com/api/users/me", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -70,28 +71,13 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Token validation error:", error);
       logout();
-    } finally {
-      setLoading(false);
     }
   };
 
-  const login = async (username, password) => {
+  const login = async (email, password) => {
     try {
-      const response = await fetch("http://localhost:8000/api/users/token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ username, password }),
-      });
-
-      if (!response.ok) throw new Error("Invalid username or password");
-
-      const data = await response.json();
-      localStorage.setItem("token", data.access_token);
-      localStorage.setItem("user", JSON.stringify({ username }));
-
-      setUser({ username });
+      const data = await loginUser({ email, password });
+      setUser(data.user);
       router.push("/dashboard");
       return true;
     } catch (error) {
@@ -102,19 +88,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password) => {
     try {
-      const response = await fetch("http://localhost:8000/api/users/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, email, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Registration failed");
-      }
-
+      await registerUser({ username, email, password });
       return true;
     } catch (error) {
       console.error("Registration error:", error);
