@@ -5,7 +5,7 @@ const apiRequest = async (endpoint, method = "GET", body = null) => {
   // Ensure the token is properly retrieved from localStorage
   const token = localStorage.getItem("token");
 
-  if (!token && endpoint !== "/api/users/register" && endpoint !== "/api/users/login") {
+  if (!token && endpoint !== "/api/users/register" && endpoint !== "/api/users/token") {
     console.error("No authentication token found. Redirecting to login...");
     window.location.href = "/login";
     return;
@@ -84,7 +84,7 @@ export const registerUser = async (userData) => {
 
 // Login a user
 export const loginUser = async (credentials) => {
-  const data = await apiRequest("/api/users/login", "POST", credentials);
+  const data = await apiRequest("/api/users/token", "POST", credentials);
   if (data.access_token) {
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user", JSON.stringify(data.user));
