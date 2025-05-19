@@ -12,7 +12,8 @@ app = FastAPI(title="TaskFlow API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://task-flow-xxm5.onrender.com",  # Deployed frontend URL
+        "https://task-flow-nine-khaki.vercel.app",  # Vercel frontend URL
+        "https://task-flow-xxm5.onrender.com",  # Render frontend URL
         "http://localhost:3000",  # For local development
     ],
     allow_credentials=True,
