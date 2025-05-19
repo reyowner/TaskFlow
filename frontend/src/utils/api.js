@@ -104,7 +104,22 @@ export const loginUser = async (credentials) => {
   const data = await response.json();
   if (data.access_token) {
     localStorage.setItem("token", data.access_token);
-    localStorage.setItem("user", JSON.stringify(data.user));
+    
+    // Fetch user data using the token
+    const userResponse = await fetch(`${API_BASE_URL}/api/users/me`, {
+      headers: {
+        'Authorization': `Bearer ${data.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!userResponse.ok) {
+      throw new Error('Failed to fetch user data');
+    }
+
+    const userData = await userResponse.json();
+    localStorage.setItem("user", JSON.stringify(userData));
+    return { ...data, user: userData };
   }
   return data;
 };
