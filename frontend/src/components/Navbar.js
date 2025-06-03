@@ -16,7 +16,7 @@ const Navbar = () => {
   return (
     <nav className="bg-army-green-800 text-white shadow-md">
       <div className="container mx-auto px-4 flex justify-between items-center py-4">
-        <Link href="/" className="flex items-center">
+        <Link href={user ? "/tutorial" : "/"} className="flex items-center hover:text-yellow-400 transition-colors duration-200">
           <FaTasks className="mr-2 text-2xl" />
           <span className="text-xl font-bold">TaskFlow</span>
         </Link>

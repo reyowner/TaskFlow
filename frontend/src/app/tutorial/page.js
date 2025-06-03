@@ -3,35 +3,33 @@
 import Link from 'next/link';
 import { 
   FaTasks, 
-  FaUserCheck, 
-  FaRocket, 
-  FaChartLine, 
-  FaMobileAlt,
+  FaPlus, 
+  FaEdit, 
+  FaTrash, 
+  FaCheck,
+  FaArrowRight,
   FaClipboardList,
-  FaRegThumbsUp,
-  FaRegLightbulb,
-  FaArrowRight
+  FaListUl,
+  FaCheckCircle,
+  FaClock
 } from "react-icons/fa";
 
-export default function Home() {
+export default function Tutorial() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
       <section className="py-16 md:py-24 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-army-dark mb-6 leading-tight">
-            Manage Your Tasks <span className="text-army-default">Efficiently</span>
+            Welcome to <span className="text-army-default">TaskFlow</span>
           </h1>
           <p className="text-xl md:text-2xl mb-10 text-gray-600 max-w-3xl mx-auto">
-            TaskFlow helps you organize your work, boost productivity, and accomplish more with less stress.
+            Let's get you started with managing your tasks efficiently
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link href="/register" className="btn btn-primary">
-              Get Started <FaArrowRight className="text-sm" />
-            </Link>
-            <Link href="/login" className="btn btn-secondary">
-              Login
+            <Link href="/dashboard" className="btn btn-primary">
+              Go to Dashboard <FaArrowRight className="text-sm" />
             </Link>
           </div>
         </div>
@@ -42,10 +40,10 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-army-dark mb-4">
-              Why Choose TaskFlow?
+              How to Use TaskFlow
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Our intuitive task management solution helps you stay organized and focused on what matters most.
+              Follow these simple steps to make the most of your task management experience
             </p>
           </div>
 
@@ -53,51 +51,51 @@ export default function Home() {
             <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-army-default text-center hover:shadow-lg transition">
               <div className="flex justify-center mb-6">
                 <div className="bg-army-light p-4 rounded-full">
-                  <FaClipboardList className="text-3xl text-army-dark" />
+                  <FaPlus className="text-3xl text-army-dark" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Intuitive Task Management</h3>
+              <h3 className="text-xl font-semibold mb-3">Create Tasks</h3>
               <p className="text-gray-600">
-                Create, organize, and track your tasks with our simple drag-and-drop interface. Easily move tasks between different statuses.
+                Click the "Add Task" button to create new tasks. Add a title, description, and set a due date to get started.
               </p>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-olive text-center hover:shadow-lg transition">
               <div className="flex justify-center mb-6">
                 <div className="bg-[#f0f4ea] p-4 rounded-full">
-                  <FaMobileAlt className="text-3xl text-olive" />
+                  <FaListUl className="text-3xl text-olive" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Accessible Anywhere</h3>
+              <h3 className="text-xl font-semibold mb-3">Organize Tasks</h3>
               <p className="text-gray-600">
-                Access your tasks from any device with our responsive design. Stay on top of your responsibilities whether at home or on the go.
+                Drag and drop tasks between different status columns: To Do, In Progress, and Completed.
               </p>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-khaki text-center hover:shadow-lg transition">
               <div className="flex justify-center mb-6">
                 <div className="bg-[#f7f5e8] p-4 rounded-full">
-                  <FaChartLine className="text-3xl text-khaki" />
+                  <FaCheckCircle className="text-3xl text-khaki" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Track Your Progress</h3>
+              <h3 className="text-xl font-semibold mb-3">Track Progress</h3>
               <p className="text-gray-600">
-                Visualize your workflow and track task progress across different stages. Celebrate your achievements as you complete tasks.
+                Monitor your task completion and stay on top of deadlines with our intuitive progress tracking.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Benefits Section */}
+      {/* Task Management Tips */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-army-dark mb-4">
-              Benefits of Using TaskFlow
+              Task Management Tips
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Experience the difference with our thoughtfully designed task management system
+              Best practices to help you stay organized and productive
             </p>
           </div>
 
@@ -105,55 +103,53 @@ export default function Home() {
             <div className="bg-white p-5 rounded-lg shadow-sm hover:shadow-md transition">
               <div className="flex items-center mb-3">
                 <div className="mr-3 text-army-default">
-                  <FaRegLightbulb className="text-xl" />
+                  <FaEdit className="text-xl" />
                 </div>
-                <h3 className="font-semibold">Increased Focus</h3>
+                <h3 className="font-semibold">Be Specific</h3>
               </div>
               <p className="text-gray-600 text-sm">
-                Prioritize tasks effectively and maintain concentration on what matters most
+                Write clear, actionable task descriptions to avoid confusion
               </p>
             </div>
 
             <div className="bg-white p-5 rounded-lg shadow-sm hover:shadow-md transition">
               <div className="flex items-center mb-3">
                 <div className="mr-3 text-army-default">
-                  <FaRocket className="text-xl" />
+                  <FaClock className="text-xl" />
                 </div>
-                <h3 className="font-semibold">Enhanced Productivity</h3>
+                <h3 className="font-semibold">Set Deadlines</h3>
               </div>
               <p className="text-gray-600 text-sm">
-                Complete more tasks in less time with our streamlined workflow system
+                Always assign due dates to keep tasks on track
               </p>
             </div>
 
             <div className="bg-white p-5 rounded-lg shadow-sm hover:shadow-md transition">
               <div className="flex items-center mb-3">
                 <div className="mr-3 text-army-default">
-                  <FaUserCheck className="text-xl" />
+                  <FaCheck className="text-xl" />
                 </div>
-                <h3 className="font-semibold">Personal Accountability</h3>
+                <h3 className="font-semibold">Regular Updates</h3>
               </div>
               <p className="text-gray-600 text-sm">
-                Track your progress and build accountability for your personal and professional goals
+                Update task status regularly to maintain accurate progress
               </p>
             </div>
 
             <div className="bg-white p-5 rounded-lg shadow-sm hover:shadow-md transition">
               <div className="flex items-center mb-3">
                 <div className="mr-3 text-army-default">
-                  <FaRegThumbsUp className="text-xl" />
+                  <FaTrash className="text-xl" />
                 </div>
-                <h3 className="font-semibold">Reduced Stress</h3>
+                <h3 className="font-semibold">Clean Up</h3>
               </div>
               <p className="text-gray-600 text-sm">
-                Decrease mental load by organizing tasks in a clear, visual system
+                Remove completed tasks to keep your dashboard organized
               </p>
             </div>
           </div>
         </div>
       </section>
-
-
     </div>
   );
-}
+} 

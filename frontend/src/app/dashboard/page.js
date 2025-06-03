@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchTasks, createTask, updateTask, deleteTask } from '@/utils/api';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { FaPlus, FaTimes, FaEye, FaEdit, FaTrash, FaCheck, FaClock, FaHourglass } from 'react-icons/fa';
+import { FaPlus, FaTimes, FaEye, FaEdit, FaTrash, FaCheck, FaClock, FaHourglass, FaEllipsisV } from 'react-icons/fa';
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -389,6 +389,7 @@ function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewT
               onEditTask={onEditTask}
               onDeleteTask={onDeleteTask}
               onViewTask={onViewTask}
+              setTasks={setTasks}
             />
           ))
         ) : (
@@ -402,7 +403,7 @@ function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewT
   );
 }
 
-function TaskCard({ task, onEditTask, onDeleteTask, onViewTask }) {
+function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks }) {
   const [{ isDragging }, drag] = useDrag({
     type: "TASK",
     item: { id: task.id },
@@ -412,6 +413,9 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask }) {
   });
 
   const [showActions, setShowActions] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef(null);
 
   const getBorderColor = (status) => {
     switch(status) {
@@ -422,13 +426,40 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask }) {
     }
   };
 
+  const handleStatusChange = async (newStatus) => {
+    try {
+      const updatedTask = await updateTask(task.id, { status: newStatus });
+      if (updatedTask) {
+        setTasks(prevTasks => prevTasks.map(t => t.id === task.id ? updatedTask : t));
+      }
+    } catch (err) {
+      console.error("Failed to update task status", err);
+    }
+    setShowStatusMenu(false);
+  };
+
+  const toggleStatusMenu = (e) => {
+    e.stopPropagation();
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY + 5,
+        left: rect.right - 150
+      });
+    }
+    setShowStatusMenu(!showStatusMenu);
+  };
+
   return (
     <div
       ref={drag}
       className={`p-4 bg-white rounded-lg shadow-sm mb-3 border-l-4 ${getBorderColor(task.status)} 
-        ${isDragging ? "opacity-50" : ""} hover:shadow-md transition-shadow cursor-grab`}
+        ${isDragging ? "opacity-50" : ""} hover:shadow-md transition-shadow cursor-grab relative`}
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseLeave={() => {
+        setShowActions(false);
+        setShowStatusMenu(false);
+      }}
     >
       <div className="flex justify-between items-start gap-2">
         <h3 
@@ -437,12 +468,55 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask }) {
         >
           {task.title}
         </h3>
+        <button
+          ref={buttonRef}
+          onClick={toggleStatusMenu}
+          className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-gray-100"
+          title="Change status"
+        >
+          <FaEllipsisV />
+        </button>
       </div>
       
       {task.description && (
         <p className="text-sm text-gray-600 mt-1 line-clamp-2">
           {task.description}
         </p>
+      )}
+      
+      {/* Status Menu */}
+      {showStatusMenu && (
+        <div 
+          className="fixed bg-white rounded-lg shadow-lg border border-gray-200 z-50 min-w-[150px]"
+          style={{
+            top: `${menuPosition.top}px`,
+            left: `${menuPosition.left}px`
+          }}
+        >
+          <div className="py-1">
+            <button
+              onClick={() => handleStatusChange('Pending')}
+              className="w-full px-4 py-2 text-black text-left text-sm hover:bg-yellow-50 flex items-center gap-2"
+            >
+              <FaHourglass className="text-yellow-500" />
+              Move to Pending
+            </button>
+            <button
+              onClick={() => handleStatusChange('In Progress')}
+              className="w-full px-4 py-2 text-black text-left text-sm hover:bg-blue-50 flex items-center gap-2"
+            >
+              <FaClock className="text-blue-500" />
+              Move to In Progress
+            </button>
+            <button
+              onClick={() => handleStatusChange('Completed')}
+              className="w-full px-4 py-2 text-black text-left text-sm hover:bg-green-50 flex items-center gap-2"
+            >
+              <FaCheck className="text-green-500" />
+              Move to Completed
+            </button>
+          </div>
+        </div>
       )}
       
       <div className={`mt-3 flex justify-end gap-1 transition-opacity ${showActions ? 'opacity-100' : 'opacity-0'}`}>
