@@ -36,8 +36,10 @@ frontend/.vercel
 frontend/*.tsbuildinfo
 frontend/next-env.d.ts
 
-# General ignores
-.node_modules
+# Root level ignores
+package.json
+package-lock.json
+node_modules
 .DS_Store
 .idea/
 .vscode/
