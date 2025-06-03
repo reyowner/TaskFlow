@@ -12,12 +12,16 @@ const ClientLayout = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const publicRoutes = ["/login", "/register"];
+  const publicRoutes = ["/login", "/register", "/"];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   useEffect(() => {
     if (!isPublicRoute && auth?.user === null && pathname !== "/") {
       router.push("/login");
+    }
+    // Redirect to tutorial if user is logged in and on home page
+    if (auth?.user && pathname === "/") {
+      router.push("/tutorial");
     }
   }, [auth?.user, router, isPublicRoute, pathname]);
 
