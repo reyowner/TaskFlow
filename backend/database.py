@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Get database URL from environment variable, fallback to SQLite for local development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./taskflow.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/taskflow.db")
 
 # If using PostgreSQL on Render, modify the URL to work with SQLAlchemy
 if DATABASE_URL.startswith("postgres://"):
