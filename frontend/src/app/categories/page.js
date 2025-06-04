@@ -289,10 +289,12 @@ export default function CategoriesPage() {
                       id="name"
                       type="text"
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-army-green-500 focus:border-transparent transition-all"
-                      placeholder="Enter category name"
+                      placeholder="Enter category name (keep it concise for better display)"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      maxLength={50}
                     />
+                    <p className="text-xs text-gray-500 mt-1">{name.length}/50 characters</p>
                   </div>
                   <div>
                     <label className="block text-army-dark text-sm font-medium mb-3">Category Color</label>
@@ -467,7 +469,7 @@ function CategoryCard({ category, onEdit, onDelete, onView }) {
   const [isHovered, setIsHovered] = useState(false)
 
   const colorObj = CATEGORY_COLORS.find((c) => c.value === category.color) || CATEGORY_COLORS[0]
-  const inProgressTasks = category.task_count > 0 ? (category.in_progress_tasks || 0) : 0
+  const inProgressTasks = category.task_count > 0 ? category.in_progress_tasks || 0 : 0
   const inProgressRate = category.task_count > 0 ? Math.round((inProgressTasks / category.task_count) * 100) : 0
   const completionRate =
     category.task_count > 0 ? Math.round(((category.completed_tasks || 0) / category.task_count) * 100) : 0
@@ -478,6 +480,13 @@ function CategoryCard({ category, onEdit, onDelete, onView }) {
     month: "short",
     day: "numeric",
   })
+
+  // Function to truncate text with word break
+  const truncateText = (text, maxLength) => {
+    if (!text) return ""
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + "..."
+  }
 
   return (
     <div
@@ -494,29 +503,53 @@ function CategoryCard({ category, onEdit, onDelete, onView }) {
       >
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative p-4 flex items-center justify-between h-full">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg flex-shrink-0">
               <FaFolder className="text-white text-lg" />
             </div>
-            <div>
-              <h3 className="text-white font-semibold text-lg truncate max-w-32">{category.name}</h3>
-              <p className="text-white/80 text-sm">{formattedDate}</p>
+            <div className="min-w-0 flex-1">
+              <h3
+                className="text-white font-semibold text-lg break-words leading-tight"
+                style={{
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                  hyphens: "auto",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+                title={category.name}
+              >
+                {category.name}
+              </h3>
+              <p className="text-white/80 text-sm truncate">{formattedDate}</p>
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className={`flex gap-1 transition-opacity duration-200 ${isHovered ? "opacity-100" : "opacity-0"}`}>
+          <div
+            className={`flex gap-1 transition-opacity duration-200 flex-shrink-0 ${isHovered ? "opacity-100" : "opacity-0"}`}
+          >
             <button
-              onClick={() => onEdit(category)}
-              className="p-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg transition-all hover:scale-110"
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit(category)
+              }}
+              className="p-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/50"
               title="Edit category"
+              aria-label="Edit category"
             >
               <FaEdit className="text-white text-sm" />
             </button>
             <button
-              onClick={() => onDelete(category.id)}
-              className="p-2 bg-white/20 backdrop-blur-sm hover:bg-red-500/80 rounded-lg transition-all hover:scale-110"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(category.id)
+              }}
+              className="p-2 bg-white/20 backdrop-blur-sm hover:bg-red-500/80 rounded-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500/50"
               title="Delete category"
+              aria-label="Delete category"
             >
               <FaTrash className="text-white text-sm" />
             </button>
@@ -584,7 +617,7 @@ function CategoryCard({ category, onEdit, onDelete, onView }) {
         {/* View button */}
         <button
           onClick={() => onView(category.id)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 hover:bg-army-light text-army-dark rounded-xl font-medium transition-all group-hover:bg-army-light group-hover:text-army-green-800 hover:brightness-105"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 hover:bg-army-light text-army-dark rounded-xl font-medium transition-all group-hover:bg-army-light group-hover:text-army-green-800 hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-army-green-500"
         >
           <FaEye />
           View Tasks

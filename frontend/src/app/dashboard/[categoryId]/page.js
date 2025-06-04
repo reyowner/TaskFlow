@@ -414,11 +414,14 @@ export default function CategoryDashboard() {
                     <textarea
                       id="description"
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-army-green-500 focus:border-transparent transition-all min-h-32"
-                      placeholder="Enter task details"
+                      placeholder="Enter task details..."
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={6}
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 Tip: Include links in your description - they'll be clickable in the task view!
+                    </p>
                   </div>
                   <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
                     <button
@@ -461,17 +464,18 @@ export default function CategoryDashboard() {
           {/* Task Viewing Modal */}
           {viewingTask && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-auto">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
                 <div className="bg-gradient-to-r from-army-green-800 to-army-green-700 px-6 py-4 flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-white">Task Details</h3>
                   <button
-                    className="text-white/80 hover:text-white transition-colors"
+                    className="text-white/80 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
                     onClick={() => setViewingTask(null)}
+                    aria-label="Close modal"
                   >
                     <FaTimes />
                   </button>
                 </div>
-                <div className="p-6">
+                <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                   <div className="flex flex-wrap gap-2 mb-4">
                     <span
                       className={`text-sm font-medium px-3 py-1 rounded-full ${
@@ -494,10 +498,42 @@ export default function CategoryDashboard() {
                       {viewingTask.priority}
                     </span>
                   </div>
-                  <h2 className="text-2xl font-semibold text-army-dark mb-4">{viewingTask.title}</h2>
+                  <h2
+                    className="text-2xl font-semibold text-army-dark mb-4 break-words"
+                    style={{
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                      hyphens: "auto",
+                    }}
+                  >
+                    {viewingTask.title}
+                  </h2>
                   {viewingTask.description ? (
-                    <div className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-xl border border-gray-100">
-                      {viewingTask.description}
+                    <div className="text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                      <div
+                        className="whitespace-pre-wrap break-words"
+                        style={{
+                          wordBreak: "break-word",
+                          overflowWrap: "break-word",
+                        }}
+                      >
+                        {viewingTask.description.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+                          if (/https?:\/\/[^\s]+/.test(part)) {
+                            return (
+                              <a
+                                key={index}
+                                href={part}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline break-all inline-block"
+                              >
+                                {part}
+                              </a>
+                            )
+                          }
+                          return <span key={index}>{part}</span>
+                        })}
+                      </div>
                     </div>
                   ) : (
                     <p className="text-gray-500 italic">No description provided</p>
@@ -652,7 +688,6 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
 
   const [showActions, setShowActions] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const buttonRef = useRef(null)
   const menuRef = useRef(null)
 
@@ -692,25 +727,6 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
 
   const toggleStatusMenu = (e) => {
     e.stopPropagation()
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      const viewportHeight = window.innerHeight
-      const menuHeight = 120 // Approximate menu height
-
-      let top = rect.bottom + window.scrollY + 5
-      let left = rect.right - 150
-
-      // Adjust if menu would go off screen
-      if (rect.bottom + menuHeight > viewportHeight) {
-        top = rect.top + window.scrollY - menuHeight - 5
-      }
-
-      if (left < 10) {
-        left = 10
-      }
-
-      setMenuPosition({ top, left })
-    }
     setShowStatusMenu(!showStatusMenu)
   }
 
@@ -727,11 +743,60 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowStatusMenu(false)
+      }
+    }
+
+    if (showStatusMenu) {
+      document.addEventListener("mousedown", handleClickOutside)
+      document.addEventListener("keydown", handleEscape)
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside)
+        document.removeEventListener("keydown", handleEscape)
+      }
+    }
   }, [showStatusMenu])
 
   const priorityTag = PRIORITY_TAGS.find((p) => p.name === task.priority) || PRIORITY_TAGS[0]
+
+  // Function to truncate text with word break
+  const truncateText = (text, maxLength) => {
+    if (!text) return ""
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + "..."
+  }
+
+  // Function to detect and render links in text
+  const renderTextWithLinks = (text) => {
+    if (!text) return null
+
+    const urlRegex = /(https?:\/\/[^\s]+)/g
+    const parts = text.split(urlRegex)
+
+    return parts.map((part, index) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline break-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part.length > 30 ? `${part.substring(0, 30)}...` : part}
+          </a>
+        )
+      }
+      return (
+        <span key={index} className="break-words">
+          {part}
+        </span>
+      )
+    })
+  }
 
   return (
     <div
@@ -745,28 +810,119 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
       }}
     >
       <div className="flex justify-between items-start gap-2">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h3
-            className="font-medium truncate cursor-pointer hover:text-army-green-800 transition-colors"
+            className="font-medium cursor-pointer hover:text-army-green-800 transition-colors break-words hyphens-auto"
             onClick={() => onViewTask(task)}
+            style={{
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
+              hyphens: "auto",
+            }}
+            title={task.title}
           >
-            {task.title}
+            {truncateText(task.title, 50)}
           </h3>
           <p className="text-xs text-gray-500 mt-1">{formattedDate}</p>
         </div>
-        <button
-          ref={buttonRef}
-          onClick={toggleStatusMenu}
-          className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-gray-100 transition-all hover:scale-110"
-          title="Change status"
-        >
-          <FaEllipsisV />
-        </button>
+        <div className="flex-shrink-0 relative">
+          <button
+            ref={buttonRef}
+            onClick={toggleStatusMenu}
+            className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-gray-100 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-army-green-500"
+            title="More options"
+            aria-label="More options"
+            aria-expanded={showStatusMenu}
+            aria-haspopup="true"
+          >
+            <FaEllipsisV />
+          </button>
+
+          {/* Enhanced Status Menu - Now positioned absolutely relative to the button */}
+          {showStatusMenu && (
+            <div
+              ref={menuRef}
+              className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] min-w-[180px] overflow-hidden"
+              role="menu"
+              aria-orientation="vertical"
+              aria-labelledby="status-menu"
+            >
+              <div className="py-1">
+                <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                  Move to Status
+                </div>
+                <button
+                  onClick={() => handleStatusChange("Pending")}
+                  className="w-full px-4 py-2 text-black text-left text-sm hover:bg-yellow-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-yellow-50"
+                  role="menuitem"
+                  disabled={task.status === "Pending"}
+                >
+                  <FaHourglass className="text-yellow-500" />
+                  <span>Pending</span>
+                  {task.status === "Pending" && <span className="ml-auto text-xs text-gray-500">Current</span>}
+                </button>
+                <button
+                  onClick={() => handleStatusChange("In Progress")}
+                  className="w-full px-4 py-2 text-black text-left text-sm hover:bg-blue-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-blue-50"
+                  role="menuitem"
+                  disabled={task.status === "In Progress"}
+                >
+                  <FaClock className="text-blue-500" />
+                  <span>In Progress</span>
+                  {task.status === "In Progress" && <span className="ml-auto text-xs text-gray-500">Current</span>}
+                </button>
+                <button
+                  onClick={() => handleStatusChange("Completed")}
+                  className="w-full px-4 py-2 text-black text-left text-sm hover:bg-green-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-green-50"
+                  role="menuitem"
+                  disabled={task.status === "Completed"}
+                >
+                  <FaCheck className="text-green-500" />
+                  <span>Completed</span>
+                  {task.status === "Completed" && <span className="ml-auto text-xs text-gray-500">Current</span>}
+                </button>
+                <div className="border-t border-gray-100 mt-1 pt-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEditTask(task)
+                      setShowStatusMenu(false)
+                    }}
+                    className="w-full px-4 py-2 text-black text-left text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-gray-50"
+                    role="menuitem"
+                  >
+                    <FaEdit className="text-gray-500" />
+                    <span>Edit Task</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDeleteTask(task.id)
+                      setShowStatusMenu(false)
+                    }}
+                    className="w-full px-4 py-2 text-red-600 text-left text-sm hover:bg-red-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-red-50"
+                    role="menuitem"
+                  >
+                    <FaTrash className="text-red-500" />
+                    <span>Delete Task</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {task.description && <p className="text-sm text-gray-600 mt-1 line-clamp-2">{task.description}</p>}
+      {task.description && (
+        <div
+          className="text-sm text-gray-600 mt-2 break-words"
+          style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
+        >
+          <div className="line-clamp-2">{renderTextWithLinks(truncateText(task.description, 100))}</div>
+        </div>
+      )}
 
-      <div className="mt-2">
+      <div className="mt-2 flex items-center justify-between">
         <span
           className="text-xs font-medium px-2 py-1 rounded-full"
           style={{
@@ -776,71 +932,45 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
         >
           {task.priority}
         </span>
-      </div>
 
-      {/* Status Menu */}
-      {showStatusMenu && (
+        {/* Action buttons - now always visible on mobile, hover on desktop */}
         <div
-          ref={menuRef}
-          className="fixed bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] min-w-[150px] overflow-hidden"
-          style={{
-            top: `${menuPosition.top}px`,
-            left: `${menuPosition.left}px`,
-          }}
+          className={`flex gap-1 transition-opacity duration-200 md:${showActions ? "opacity-100" : "opacity-0"} opacity-100`}
         >
-          <div className="py-1">
-            <button
-              onClick={() => handleStatusChange("Pending")}
-              className="w-full px-4 py-2 text-black text-left text-sm hover:bg-yellow-50 flex items-center gap-2 transition-colors"
-            >
-              <FaHourglass className="text-yellow-500" />
-              Move to Pending
-            </button>
-            <button
-              onClick={() => handleStatusChange("In Progress")}
-              className="w-full px-4 py-2 text-black text-left text-sm hover:bg-blue-50 flex items-center gap-2 transition-colors"
-            >
-              <FaClock className="text-blue-500" />
-              Move to In Progress
-            </button>
-            <button
-              onClick={() => handleStatusChange("Completed")}
-              className="w-full px-4 py-2 text-black text-left text-sm hover:bg-green-50 flex items-center gap-2 transition-colors"
-            >
-              <FaCheck className="text-green-500" />
-              Move to Completed
-            </button>
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onViewTask(task)
+            }}
+            className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-gray-100 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-army-green-500"
+            title="View task"
+            aria-label="View task"
+          >
+            <FaEye />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onEditTask(task)
+            }}
+            className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-gray-100 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-army-green-500"
+            title="Edit task"
+            aria-label="Edit task"
+          >
+            <FaEdit />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDeleteTask(task.id)
+            }}
+            className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-red-100 hover:text-red-600 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500"
+            title="Delete task"
+            aria-label="Delete task"
+          >
+            <FaTrash />
+          </button>
         </div>
-      )}
-
-      {/* Action buttons */}
-      <div
-        className={`mt-3 flex justify-end gap-1 transition-opacity duration-200 ${
-          showActions ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <button
-          onClick={() => onViewTask(task)}
-          className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-gray-100 transition-all hover:scale-110"
-          title="View task"
-        >
-          <FaEye />
-        </button>
-        <button
-          onClick={() => onEditTask(task)}
-          className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-gray-100 transition-all hover:scale-110"
-          title="Edit task"
-        >
-          <FaEdit />
-        </button>
-        <button
-          onClick={() => onDeleteTask(task.id)}
-          className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-red-100 hover:text-red-600 transition-all hover:scale-110"
-          title="Delete task"
-        >
-          <FaTrash />
-        </button>
       </div>
     </div>
   )
