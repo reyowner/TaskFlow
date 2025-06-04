@@ -228,19 +228,6 @@ export default function Register() {
               )}
             </div>
           </div>
-
-          <div className="flex items-center">
-            <input
-              id="terms"
-              name="terms"
-              type="checkbox"
-              required
-              className="h-4 w-4 text-army-green-800 focus:ring-army-green-500 border-gray-300 rounded"
-            />
-            <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-              I agree to the <a href="#" className="text-army-green-800 hover:text-army-green-700">Terms of Service</a> and <a href="#" className="text-army-green-800 hover:text-army-green-700">Privacy Policy</a>
-            </label>
-          </div>
           
           <button
             type="submit"
