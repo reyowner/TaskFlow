@@ -4,8 +4,7 @@ from routers import auth, tasks, categories, tags
 from database import engine
 import models
 
-# Drop and recreate all tables
-models.Base.metadata.drop_all(bind=engine)
+# Create tables if they don't exist
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="TaskFlow API")
