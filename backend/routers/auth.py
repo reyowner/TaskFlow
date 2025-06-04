@@ -15,9 +15,9 @@ router = APIRouter(
 )
 
 # Secret key to sign JWT tokens
-SECRET_KEY = "your-secret-key-change-in-production"
+SECRET_KEY = "1b5ea099b51d1fc6180c0e264fbd49ee12c445ce53aa8f27d72416517505f992"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 20
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
