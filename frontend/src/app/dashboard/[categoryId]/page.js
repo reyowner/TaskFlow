@@ -18,10 +18,12 @@ import {
   FaCheckCircle,
   FaExclamationCircle,
   FaTimes,
+  FaBars,
 } from "react-icons/fa"
 import { useAuth } from "@/contexts/AuthContext"
 import { DndProvider, useDrag, useDrop } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
+import { TouchBackend } from "react-dnd-touch-backend"
 import categoryService from "@/services/categoryService"
 import taskService from "@/services/taskService"
 import { toast } from "react-hot-toast"
@@ -36,6 +38,11 @@ const PRIORITY_ORDER = {
   High: 0,
   Medium: 1,
   Low: 2,
+}
+
+// Detect if device supports touch
+const isTouchDevice = () => {
+  return "ontouchstart" in window || navigator.maxTouchPoints > 0
 }
 
 export default function CategoryDashboard() {
@@ -54,6 +61,10 @@ export default function CategoryDashboard() {
   const [viewingTask, setViewingTask] = useState(null)
   const [showConfirmDelete, setShowConfirmDelete] = useState(null)
   const [priorityFilter, setPriorityFilter] = useState("All")
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
+
+  // Choose backend based on device type
+  const dndBackend = isTouchDevice() ? TouchBackend : HTML5Backend
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -187,8 +198,8 @@ export default function CategoryDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-army-light">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-army-light border-t-army-green-800 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading tasks...</p>
+          <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-army-light border-t-army-green-800 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium text-sm sm:text-base">Loading tasks...</p>
         </div>
       </div>
     )
@@ -196,15 +207,15 @@ export default function CategoryDashboard() {
 
   if (!category) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-army-light">
-        <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl p-12 max-w-md mx-auto border border-gray-200/50 shadow-lg">
-          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FaExclamationCircle className="text-3xl text-red-500" />
+      <div className="min-h-screen flex items-center justify-center bg-army-light p-4">
+        <div className="text-center bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-8 sm:p-12 max-w-md mx-auto border border-gray-200/50 shadow-lg">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+            <FaExclamationCircle className="text-2xl sm:text-3xl text-red-500" />
           </div>
-          <h1 className="text-2xl font-semibold text-army-dark mb-4">Category not found</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-army-dark mb-3 sm:mb-4">Category not found</h1>
           <button
             onClick={() => router.push("/categories")}
-            className="px-6 py-3 bg-gradient-to-r from-army-green-800 to-army-green-700 hover:from-army-green-700 hover:to-army-green-600 text-white rounded-xl font-medium transition-all transform hover:scale-105 shadow-lg"
+            className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-army-green-800 to-army-green-700 hover:from-army-green-700 hover:to-army-green-600 text-white rounded-lg sm:rounded-xl font-medium transition-all transform hover:scale-105 shadow-lg text-sm sm:text-base"
           >
             <FaArrowLeft className="mr-2 inline" /> Go back to categories
           </button>
@@ -214,116 +225,189 @@ export default function CategoryDashboard() {
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DndProvider backend={dndBackend}>
       <div className="min-h-screen bg-army-light">
-        {/* Header Section */}
+        {/* Mobile-First Header Section - FIXED */}
         <div className="backdrop-blur-sm top-0 z-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
               <div className="flex-1">
-                <div className="flex items-center gap-4 mb-4">
-                  <button
-                    onClick={() => router.push("/categories")}
-                    className="p-3 rounded-xl shadow-sm hover:bg-army-light transition-colors"
-                    aria-label="Go back to categories"
-                  >
-                    <FaArrowLeft className="text-army-dark" />
-                  </button>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-12 h-12 rounded-xl shadow-sm flex items-center justify-center"
-                      style={{ backgroundColor: category.color }}
-                    >
-                      <FaFolder className="text-white text-xl" />
-                    </div>
-                    <div>
-                      <h1 className="text-3xl font-bold text-army-dark">{category.name}</h1>
-                      <p className="text-gray-600 mt-1">
-                        {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Priority Filter */}
-                <div className="mb-6 backdrop-blur-sm rounded-xl p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <FaFilter className="text-gray-500" />
-                      <span className="text-sm font-medium text-gray-700">Filter by Priority:</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
+                {/* Back Button and Title - COMPLETELY REDESIGNED FOR MOBILE */}
+                <div className="mb-4">
+                  {/* Mobile Layout - Stacked */}
+                  <div className="block sm:hidden">
+                    {/* Back Button Row - Full width on mobile */}
+                    <div className="flex items-center mb-3">
                       <button
-                        onClick={() => setPriorityFilter("All")}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                          priorityFilter === "All" ? "bg-army-green-800 text-white shadow-sm" : "text-gray-700"
-                        }`}
+                        onClick={() => router.push("/categories")}
+                        className="flex items-center gap-2 px-3 py-2 backdrop-blur-sm rounded-lg hover:bg-white transition-colors text-army-dark font-medium text-sm"
+                        aria-label="Go back to categories"
                       >
-                        All
+                        <FaArrowLeft className="text-sm" />
+                        <span>Back to Categories</span>
                       </button>
-                      {PRIORITY_TAGS.map((tag) => (
-                        <button
-                          key={tag.name}
-                          onClick={() => setPriorityFilter(tag.name)}
-                          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                            priorityFilter === tag.name
-                              ? "ring-2 ring-offset-2 ring-army-green-500 shadow-sm"
-                              : "hover:bg-gray-100"
-                          }`}
+                    </div>
+
+                    {/* Category Info Row - Full width on mobile */}
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-12 h-12 rounded-xl shadow-sm flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: category.color }}
+                      >
+                        <FaFolder className="text-white text-lg" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h1
+                          className="text-lg font-bold text-army-dark leading-tight"
                           style={{
-                            backgroundColor: priorityFilter === tag.name ? tag.bgColor : "transparent",
-                            color: priorityFilter === tag.name ? tag.color : "inherit",
+                            wordBreak: "break-word",
+                            overflowWrap: "break-word",
+                            hyphens: "auto",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
                           }}
+                          title={category.name}
                         >
-                          {tag.name}
-                        </button>
-                      ))}
+                          {category.name}
+                        </h1>
+                        <p className="text-gray-600 text-sm">
+                          {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Desktop Layout - Horizontal */}
+                  <div className="hidden sm:flex items-center gap-4">
+                    <button
+                      onClick={() => router.push("/categories")}
+                      className="p-3 rounded-xl shadow-sm hover:bg-army-light transition-colors flex-shrink-0 bg-white/90 backdrop-blur-sm border border-gray-200/50"
+                      aria-label="Go back to categories"
+                    >
+                      <FaArrowLeft className="text-army-dark text-base" />
+                    </button>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div
+                        className="w-12 h-12 rounded-xl shadow-sm flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: category.color }}
+                      >
+                        <FaFolder className="text-white text-xl" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h1 className="text-3xl font-bold text-army-dark truncate">{category.name}</h1>
+                        <p className="text-gray-600 mt-1 text-base">
+                          {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Stats Cards - Removed redundant completion rate */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-army-light rounded-lg">
-                        <FaTasks className="text-army-green-800" />
+                {/* Mobile Priority Filter Toggle */}
+                <div className="mb-4 sm:mb-6">
+                  <div className="flex items-center justify-between sm:hidden">
+                    <button
+                      onClick={() => setShowMobileFilters(!showMobileFilters)}
+                      className="flex items-center gap-2 px-3 py-2 bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200 text-sm font-medium text-gray-700"
+                    >
+                      <FaFilter className="text-xs" />
+                      Filter ({priorityFilter})
+                      <FaBars className="text-xs" />
+                    </button>
+                  </div>
+
+                  {/* Priority Filter - Desktop and Mobile Expanded */}
+                  <div
+                    className={`${showMobileFilters ? "block" : "hidden"} sm:block backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 mt-2 sm:mt-0 bg-white/90 sm:bg-transparent border border-gray-200 sm:border-none`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      <div className="flex items-center gap-2">
+                        <FaFilter className="text-gray-500 text-sm" />
+                        <span className="text-sm font-medium text-gray-700">Filter by Priority:</span>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Total Tasks</p>
-                        <p className="text-2xl font-bold text-army-dark">{totalTasks}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => {
+                            setPriorityFilter("All")
+                            setShowMobileFilters(false)
+                          }}
+                          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                            priorityFilter === "All"
+                              ? "bg-army-green-800 text-white shadow-sm"
+                              : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                        >
+                          All
+                        </button>
+                        {PRIORITY_TAGS.map((tag) => (
+                          <button
+                            key={tag.name}
+                            onClick={() => {
+                              setPriorityFilter(tag.name)
+                              setShowMobileFilters(false)
+                            }}
+                            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                              priorityFilter === tag.name
+                                ? "ring-2 ring-offset-2 ring-army-green-500 shadow-sm"
+                                : "hover:bg-gray-100"
+                            }`}
+                            style={{
+                              backgroundColor: priorityFilter === tag.name ? tag.bgColor : "transparent",
+                              color: priorityFilter === tag.name ? tag.color : "inherit",
+                            }}
+                          >
+                            {tag.name}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
-                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <FaClock className="text-blue-600" />
+                </div>
+
+                {/* Stats Cards - Mobile Responsive Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200/50">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="p-1.5 sm:p-2 bg-army-light rounded-lg">
+                        <FaTasks className="text-army-green-800 text-sm sm:text-base" />
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">In Progress</p>
-                        <p className="text-2xl font-bold text-army-dark">{inProgressTasks}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm text-gray-600">Total Tasks</p>
+                        <p className="text-lg sm:text-2xl font-bold text-army-dark">{totalTasks}</p>
                       </div>
                     </div>
                   </div>
-                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <FaCheckCircle className="text-army-green-500" />
+                  <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200/50">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                        <FaClock className="text-blue-600 text-sm sm:text-base" />
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Completed</p>
-                        <p className="text-2xl font-bold text-army-dark">{completedTasks}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm text-gray-600">In Progress</p>
+                        <p className="text-lg sm:text-2xl font-bold text-army-dark">{inProgressTasks}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200/50">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg">
+                        <FaCheckCircle className="text-army-green-500 text-sm sm:text-base" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm text-gray-600">Completed</p>
+                        <p className="text-lg sm:text-2xl font-bold text-army-dark">{completedTasks}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div>
+              {/* Action Button - Mobile Optimized */}
+              <div className="flex justify-end">
                 <button
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all transform ${
+                  className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all transform ${
                     showForm
                       ? "bg-gray-200 hover:bg-gray-300 text-gray-700"
                       : "bg-gradient-to-r from-army-green-800 to-army-green-700 text-white font-medium shadow-lg hover:shadow-xl hover:shadow-army-green-800/30 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 hover:brightness-110 relative overflow-hidden group"
@@ -336,11 +420,14 @@ export default function CategoryDashboard() {
                 >
                   {showForm ? (
                     <>
-                      <FaTimes /> Cancel
+                      <FaTimes className="text-sm sm:text-base" />
+                      <span className="hidden sm:inline">Cancel</span>
                     </>
                   ) : (
                     <>
-                      <FaPlus className="text-lg" /> New Task
+                      <FaPlus className="text-sm sm:text-lg" />
+                      <span className="hidden sm:inline">New Task</span>
+                      <span className="sm:hidden">New</span>
                     </>
                   )}
                 </button>
@@ -349,49 +436,49 @@ export default function CategoryDashboard() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          {/* Task Form Modal */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-4 sm:pb-8">
+          {/* Task Form Modal - Mobile Optimized */}
           {showForm && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-start sm:items-center p-2 sm:p-4 overflow-y-auto">
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden mt-4 sm:mt-0 max-h-[95vh] sm:max-h-none overflow-y-auto">
                 <div
-                  className="px-6 py-4 flex justify-between items-center"
+                  className="px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center"
                   style={{
                     background: `linear-gradient(135deg, ${category.color}dd, ${category.color})`,
                   }}
                 >
-                  <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                    <FaTasks />
-                    {editingTask ? "Edit Task" : "Create New Task"}
+                  <h2 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-2">
+                    <FaTasks className="text-sm sm:text-base" />
+                    <span className="truncate">{editingTask ? "Edit Task" : "Create New Task"}</span>
                   </h2>
-                  <button onClick={resetForm} className="text-white/80 hover:text-white transition-colors">
-                    <FaTimes />
+                  <button onClick={resetForm} className="text-white/80 hover:text-white transition-colors p-1">
+                    <FaTimes className="text-sm sm:text-base" />
                   </button>
                 </div>
-                <form onSubmit={handleSubmit} className="p-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-army-dark text-sm font-medium mb-3" htmlFor="title">
+                <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="lg:col-span-1">
+                      <label className="block text-army-dark text-sm font-medium mb-2 sm:mb-3" htmlFor="title">
                         Task Title
                       </label>
                       <input
                         id="title"
                         type="text"
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-army-green-500 focus:border-transparent transition-all"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-army-green-500 focus:border-transparent transition-all text-sm sm:text-base"
                         placeholder="Enter task title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                       />
                     </div>
-                    <div>
-                      <label className="block text-army-dark text-sm font-medium mb-3">Priority</label>
-                      <div className="flex gap-3">
+                    <div className="lg:col-span-1">
+                      <label className="block text-army-dark text-sm font-medium mb-2 sm:mb-3">Priority</label>
+                      <div className="flex gap-2 sm:gap-3">
                         {PRIORITY_TAGS.map((tag) => (
                           <button
                             key={tag.name}
                             type="button"
                             onClick={() => setSelectedPriority(tag)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                               selectedPriority.name === tag.name
                                 ? "ring-2 ring-offset-2 ring-army-green-500 shadow-sm"
                                 : "hover:bg-gray-100"
@@ -407,33 +494,33 @@ export default function CategoryDashboard() {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-6">
-                    <label className="block text-army-dark text-sm font-medium mb-3" htmlFor="description">
+                  <div className="mt-4 sm:mt-6 lg:col-span-2">
+                    <label className="block text-army-dark text-sm font-medium mb-2 sm:mb-3" htmlFor="description">
                       Task Description
                     </label>
                     <textarea
                       id="description"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-army-green-500 focus:border-transparent transition-all min-h-32"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-army-green-500 focus:border-transparent transition-all min-h-24 sm:min-h-32 text-sm sm:text-base"
                       placeholder="Enter task details..."
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      rows={6}
+                      rows={4}
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       💡 Tip: Include links in your description - they'll be clickable in the task view!
                     </p>
                   </div>
-                  <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
                     <button
                       type="button"
-                      className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg sm:rounded-xl font-medium transition-all order-2 sm:order-1"
                       onClick={resetForm}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-3 bg-gradient-to-r from-army-green-800 to-army-green-700 text-white rounded-xl font-medium transition-all transform hover:scale-[1.02] hover:-translate-y-0.5 hover:brightness-110 shadow-lg hover:shadow-xl hover:shadow-army-green-800/30 disabled:opacity-50"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-army-green-800 to-army-green-700 text-white rounded-lg sm:rounded-xl font-medium transition-all transform hover:scale-[1.02] hover:-translate-y-0.5 hover:brightness-110 shadow-lg hover:shadow-xl hover:shadow-army-green-800/30 disabled:opacity-50 order-1 sm:order-2"
                       disabled={buttonLoading}
                     >
                       {buttonLoading ? "Saving..." : editingTask ? "Update Task" : "Create Task"}
@@ -444,8 +531,8 @@ export default function CategoryDashboard() {
             </div>
           )}
 
-          {/* Task Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Task Columns - Mobile Responsive */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {["Pending", "In Progress", "Completed"].map((status) => (
               <TaskColumn
                 key={status}
@@ -461,24 +548,24 @@ export default function CategoryDashboard() {
             ))}
           </div>
 
-          {/* Task Viewing Modal */}
+          {/* Task Viewing Modal - Mobile Optimized */}
           {viewingTask && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-                <div className="bg-gradient-to-r from-army-green-800 to-army-green-700 px-6 py-4 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-white">Task Details</h3>
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-start sm:items-center p-2 sm:p-4 overflow-y-auto">
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden mt-4 sm:mt-0">
+                <div className="bg-gradient-to-r from-army-green-800 to-army-green-700 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+                  <h3 className="text-base sm:text-lg font-semibold text-white">Task Details</h3>
                   <button
                     className="text-white/80 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
                     onClick={() => setViewingTask(null)}
                     aria-label="Close modal"
                   >
-                    <FaTimes />
+                    <FaTimes className="text-sm sm:text-base" />
                   </button>
                 </div>
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                  <div className="flex flex-wrap gap-2 mb-4">
+                <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-120px)]">
+                  <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
                     <span
-                      className={`text-sm font-medium px-3 py-1 rounded-full ${
+                      className={`text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full ${
                         viewingTask.status === "Pending"
                           ? "bg-yellow-100 text-yellow-800"
                           : viewingTask.status === "In Progress"
@@ -489,7 +576,7 @@ export default function CategoryDashboard() {
                       {viewingTask.status}
                     </span>
                     <span
-                      className="text-sm font-medium px-3 py-1 rounded-full"
+                      className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full"
                       style={{
                         backgroundColor: PRIORITY_TAGS.find((p) => p.name === viewingTask.priority)?.bgColor,
                         color: PRIORITY_TAGS.find((p) => p.name === viewingTask.priority)?.color,
@@ -499,7 +586,7 @@ export default function CategoryDashboard() {
                     </span>
                   </div>
                   <h2
-                    className="text-2xl font-semibold text-army-dark mb-4 break-words"
+                    className="text-xl sm:text-2xl font-semibold text-army-dark mb-3 sm:mb-4 break-words"
                     style={{
                       wordBreak: "break-word",
                       overflowWrap: "break-word",
@@ -509,9 +596,9 @@ export default function CategoryDashboard() {
                     {viewingTask.title}
                   </h2>
                   {viewingTask.description ? (
-                    <div className="text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div className="text-gray-700 bg-gray-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-gray-100">
                       <div
-                        className="whitespace-pre-wrap break-words"
+                        className="whitespace-pre-wrap break-words text-sm sm:text-base"
                         style={{
                           wordBreak: "break-word",
                           overflowWrap: "break-word",
@@ -536,50 +623,50 @@ export default function CategoryDashboard() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-gray-500 italic">No description provided</p>
+                    <p className="text-gray-500 italic text-sm sm:text-base">No description provided</p>
                   )}
                 </div>
-                <div className="border-t border-gray-200 p-4 flex justify-end gap-3">
+                <div className="border-t border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row justify-end gap-3">
                   <button
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all"
+                    className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all order-2 sm:order-1"
                     onClick={() => setViewingTask(null)}
                   >
                     Close
                   </button>
                   <button
-                    className="px-4 py-2 bg-gradient-to-r from-army-green-800 to-army-green-700 text-white rounded-lg font-medium transition-all transform hover:scale-[1.02] hover:-translate-y-0.5 hover:brightness-110 shadow-lg hover:shadow-xl hover:shadow-army-green-800/30 flex items-center gap-2"
+                    className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gradient-to-r from-army-green-800 to-army-green-700 text-white rounded-lg font-medium transition-all transform hover:scale-[1.02] hover:-translate-y-0.5 hover:brightness-110 shadow-lg hover:shadow-xl hover:shadow-army-green-800/30 flex items-center justify-center gap-2 order-1 sm:order-2"
                     onClick={() => {
                       handleEditTask(viewingTask)
                       setViewingTask(null)
                     }}
                   >
-                    <FaEdit /> Edit
+                    <FaEdit className="text-sm" /> Edit
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Delete Confirmation Modal */}
+          {/* Delete Confirmation Modal - Mobile Optimized */}
           {showConfirmDelete && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-                <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
-                  <h3 className="text-lg font-semibold text-white">Confirm Deletion</h3>
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+                <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 sm:px-6 py-3 sm:py-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-white">Confirm Deletion</h3>
                 </div>
-                <div className="p-6">
-                  <p className="text-gray-600 mb-6">
+                <div className="p-4 sm:p-6">
+                  <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                     Are you sure you want to delete this task? This action cannot be undone.
                   </p>
-                  <div className="flex justify-end gap-3">
+                  <div className="flex flex-col sm:flex-row justify-end gap-3">
                     <button
-                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all"
+                      className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all order-2 sm:order-1"
                       onClick={() => setShowConfirmDelete(null)}
                     >
                       Cancel
                     </button>
                     <button
-                      className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium transition-all"
+                      className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium transition-all order-1 sm:order-2"
                       onClick={() => handleDeleteTask(showConfirmDelete)}
                     >
                       Delete
@@ -595,6 +682,7 @@ export default function CategoryDashboard() {
   )
 }
 
+// Mobile-Optimized TaskColumn component
 function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewTask, icon, categoryColor }) {
   const [{ isOver }, drop] = useDrop({
     accept: "TASK",
@@ -635,22 +723,24 @@ function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewT
   return (
     <div
       ref={drop}
-      className={`rounded-xl border ${colors.border} ${
+      className={`rounded-lg sm:rounded-xl border ${colors.border} ${
         isOver ? "ring-2 ring-army-green-500" : ""
-      } transition-all h-full flex flex-col bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md`}
+      } transition-all h-full flex flex-col bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md min-h-[300px] sm:min-h-[400px]`}
     >
-      <div className={`p-4 ${colors.bg} rounded-t-xl border-b ${colors.border}`}>
+      <div className={`p-3 sm:p-4 ${colors.bg} rounded-t-lg sm:rounded-t-xl border-b ${colors.border}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {icon}
-            <h2 className={`text-lg font-medium ${colors.text}`}>{status}</h2>
+            <h2 className={`text-base sm:text-lg font-medium ${colors.text}`}>{status}</h2>
           </div>
-          <span className="bg-white/80 backdrop-blur-sm text-sm py-1 px-3 rounded-full shadow-sm">{tasks.length}</span>
+          <span className="bg-white/80 backdrop-blur-sm text-xs sm:text-sm py-1 px-2 sm:px-3 rounded-full shadow-sm">
+            {tasks.length}
+          </span>
         </div>
       </div>
-      <div className="p-3 flex-grow">
+      <div className="p-2 sm:p-3 flex-grow overflow-y-auto">
         {tasks && tasks.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {tasks.map((task) => (
               <TaskCard
                 key={task.id}
@@ -664,12 +754,12 @@ function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewT
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-400">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+          <div className="text-center py-6 sm:py-8 text-gray-400">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 rounded-full bg-gray-100 flex items-center justify-center">
               {icon}
             </div>
-            <p className="font-medium">No tasks in this column</p>
-            <p className="text-sm mt-1">Drag and drop tasks here</p>
+            <p className="font-medium text-sm sm:text-base">No tasks in this column</p>
+            <p className="text-xs sm:text-sm mt-1">Drag and drop tasks here</p>
           </div>
         )}
       </div>
@@ -677,6 +767,7 @@ function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewT
   )
 }
 
+// Mobile-Optimized TaskCard component
 function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, categoryColor }) {
   const [{ isDragging }, drag] = useDrag({
     type: "TASK",
@@ -801,7 +892,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
   return (
     <div
       ref={drag}
-      className={`p-4 bg-white rounded-lg shadow-sm mb-3 border-l-4 ${getBorderColor(task.status)} 
+      className={`p-3 sm:p-4 bg-white rounded-lg shadow-sm mb-2 sm:mb-3 border-l-4 ${getBorderColor(task.status)} 
         ${isDragging ? "opacity-50" : ""} hover:shadow-md transition-shadow cursor-grab relative group`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => {
@@ -812,7 +903,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
       <div className="flex justify-between items-start gap-2">
         <div className="flex-1 min-w-0">
           <h3
-            className="font-medium cursor-pointer hover:text-army-green-800 transition-colors break-words hyphens-auto"
+            className="font-medium cursor-pointer hover:text-army-green-800 transition-colors break-words hyphens-auto text-sm sm:text-base"
             onClick={() => onViewTask(task)}
             style={{
               wordBreak: "break-word",
@@ -838,7 +929,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
             <FaEllipsisV />
           </button>
 
-          {/* Enhanced Status Menu - Now positioned absolutely relative to the button */}
+          {/* Enhanced Status Menu - Mobile Optimized */}
           {showStatusMenu && (
             <div
               ref={menuRef}
@@ -848,12 +939,12 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
               aria-labelledby="status-menu"
             >
               <div className="py-1">
-                <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                <div className="px-3 sm:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-100">
                   Move to Status
                 </div>
                 <button
                   onClick={() => handleStatusChange("Pending")}
-                  className="w-full px-4 py-2 text-black text-left text-sm hover:bg-yellow-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-yellow-50"
+                  className="w-full px-3 sm:px-4 py-2 text-black text-left text-sm hover:bg-yellow-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-yellow-50"
                   role="menuitem"
                   disabled={task.status === "Pending"}
                 >
@@ -863,7 +954,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
                 </button>
                 <button
                   onClick={() => handleStatusChange("In Progress")}
-                  className="w-full px-4 py-2 text-black text-left text-sm hover:bg-blue-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-blue-50"
+                  className="w-full px-3 sm:px-4 py-2 text-black text-left text-sm hover:bg-blue-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-blue-50"
                   role="menuitem"
                   disabled={task.status === "In Progress"}
                 >
@@ -873,7 +964,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
                 </button>
                 <button
                   onClick={() => handleStatusChange("Completed")}
-                  className="w-full px-4 py-2 text-black text-left text-sm hover:bg-green-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-green-50"
+                  className="w-full px-3 sm:px-4 py-2 text-black text-left text-sm hover:bg-green-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-green-50"
                   role="menuitem"
                   disabled={task.status === "Completed"}
                 >
@@ -888,7 +979,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
                       onEditTask(task)
                       setShowStatusMenu(false)
                     }}
-                    className="w-full px-4 py-2 text-black text-left text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-gray-50"
+                    className="w-full px-3 sm:px-4 py-2 text-black text-left text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-gray-50"
                     role="menuitem"
                   >
                     <FaEdit className="text-gray-500" />
@@ -900,7 +991,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
                       onDeleteTask(task.id)
                       setShowStatusMenu(false)
                     }}
-                    className="w-full px-4 py-2 text-red-600 text-left text-sm hover:bg-red-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-red-50"
+                    className="w-full px-3 sm:px-4 py-2 text-red-600 text-left text-sm hover:bg-red-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-red-50"
                     role="menuitem"
                   >
                     <FaTrash className="text-red-500" />
@@ -915,7 +1006,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
 
       {task.description && (
         <div
-          className="text-sm text-gray-600 mt-2 break-words"
+          className="text-xs sm:text-sm text-gray-600 mt-2 break-words"
           style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
         >
           <div className="line-clamp-2">{renderTextWithLinks(truncateText(task.description, 100))}</div>
@@ -933,9 +1024,11 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
           {task.priority}
         </span>
 
-        {/* Action buttons - now always visible on mobile, hover on desktop */}
+        {/* Action buttons - Always visible on mobile, hover on desktop */}
         <div
-          className={`flex gap-1 transition-opacity duration-200 md:${showActions ? "opacity-100" : "opacity-0"} opacity-100`}
+          className={`flex gap-1 transition-opacity duration-200 ${
+            showActions ? "opacity-100" : "sm:opacity-0 opacity-100"
+          }`}
         >
           <button
             onClick={(e) => {
