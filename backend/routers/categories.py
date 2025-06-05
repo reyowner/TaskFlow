@@ -108,20 +108,20 @@ def delete_category(
         if db_category is None:
             raise HTTPException(status_code=404, detail="Category not found")
         
-        # First, update all tasks in this category to have no category
+        # First, delete all tasks in this category
         tasks = db.query(models.Task).filter(
             models.Task.category_id == category_id,
             models.Task.owner_id == current_user.id
         ).all()
         
         for task in tasks:
-            task.category_id = None
+            db.delete(task)
         
         # Then delete the category
         db.delete(db_category)
         db.commit()
         
-        return {"message": "Category deleted successfully"}
+        return {"message": "Category and its tasks deleted successfully"}
     except Exception as e:
         db.rollback()
         raise HTTPException(
