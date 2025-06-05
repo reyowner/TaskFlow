@@ -5,7 +5,7 @@ from datetime import timedelta
 from pydantic import BaseModel
 from models import User
 from database import get_db
-from auth import (
+from routers.auth import (
     get_password_hash, 
     verify_password, 
     create_access_token, 
@@ -13,7 +13,10 @@ from auth import (
     get_current_user
 )
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/users",
+    tags=["users"]
+)
 
 class UserCreate(BaseModel):
     username: str
