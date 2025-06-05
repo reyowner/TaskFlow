@@ -1,42 +1,19 @@
-import "../styles/globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ClientLayout from "@/components/ClientLayout";
+import { Html, Head, Main, NextScript } from 'next/document';
 
-// Metadata (server component)
-export const metadata = {
-  title: {
-    template: '%s | TaskFlow',
-    default: 'TaskFlow',
-  },
-  description: 'TaskFlow - Manage your tasks efficiently',
-  icons: {
-    icon: "/task.png",
-  },
-  manifest: '/manifest.json',
-  themeColor: '#000000',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black',
-    title: 'TaskFlow',
-  },
-};
-
-// Root layout (server component)
-export default function RootLayout({ children }) {
+export default function Document() {
   return (
-    <html lang="en">
-      <head>
+    <Html lang="en">
+      <Head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <meta name="apple-mobile-web-app-title" content="TaskFlow" />
-      </head>
-      <body className="min-h-screen flex flex-col bg-army-light">
-        <AuthProvider>
-          <ClientLayout>{children}</ClientLayout>
-        </AuthProvider>
+      </Head>
+      <body>
+        <Main />
+        <NextScript />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -56,6 +33,6 @@ export default function RootLayout({ children }) {
           }}
         />
       </body>
-    </html>
+    </Html>
   );
-}
+} 
