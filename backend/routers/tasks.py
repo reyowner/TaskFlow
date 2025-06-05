@@ -62,11 +62,22 @@ def create_task(
                     detail="Category not found or you don't have access to it"
                 )
 
+        # Convert due_date string to datetime if provided
+        due_date = None
+        if task.due_date:
+            try:
+                due_date = datetime.fromisoformat(task.due_date)
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid due date format. Please use ISO format (YYYY-MM-DD)"
+                )
+
         db_task = models.Task(
             title=task.title,
             description=task.description,
             status=task.status,
-            due_date=task.due_date,
+            due_date=due_date,
             priority=task.priority,
             owner_id=current_user.id,
             category_id=task.category_id
@@ -126,7 +137,24 @@ def update_task(
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    for key, value in task.dict(exclude_unset=True).items():
+    # Convert task data to dict and handle due_date separately
+    task_data = task.dict(exclude_unset=True)
+    
+    # Handle due_date conversion if provided
+    if 'due_date' in task_data:
+        if task_data['due_date']:
+            try:
+                task_data['due_date'] = datetime.fromisoformat(task_data['due_date'])
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid due date format. Please use ISO format (YYYY-MM-DD)"
+                )
+        else:
+            task_data['due_date'] = None
+
+    # Update task attributes
+    for key, value in task_data.items():
         setattr(db_task, key, value)
 
     db.commit()

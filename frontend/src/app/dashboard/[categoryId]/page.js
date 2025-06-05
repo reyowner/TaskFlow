@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import {
   FaPlus,
   FaArrowLeft,
@@ -29,6 +29,7 @@ import { MultiBackend } from "react-dnd-multi-backend"
 import categoryService from "@/services/categoryService"
 import taskService from "@/services/taskService"
 import { toast } from "react-hot-toast"
+import { format } from "date-fns"
 
 const PRIORITY_TAGS = [
   { name: "High", color: "#EF4444", bgColor: "#FEE2E2", lightBg: "bg-red-50", darkBg: "bg-red-100" },
@@ -62,9 +63,30 @@ const backendConfig = {
   ],
 }
 
+const getDueDateLabel = (dateString) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const dueDate = new Date(dateString)
+  dueDate.setHours(0, 0, 0, 0)
+
+  const diffTime = dueDate - today
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return "Today"
+  if (diffDays === 1) return "Tomorrow"
+  if (diffDays <= 7) return `In ${diffDays} days`
+  if (diffDays <= 30) return `In ${Math.floor(diffDays / 7)} weeks`
+  return "Future"
+}
+
 export default function CategoryDashboard() {
   const { categoryId } = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isAuthenticated } = useAuth()
   const [category, setCategory] = useState(null)
   const [tasks, setTasks] = useState([])
@@ -73,12 +95,14 @@ export default function CategoryDashboard() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [selectedPriority, setSelectedPriority] = useState(PRIORITY_TAGS[0])
+  const [dueDate, setDueDate] = useState("")
   const [editingTask, setEditingTask] = useState(null)
   const [buttonLoading, setButtonLoading] = useState(false)
   const [viewingTask, setViewingTask] = useState(null)
   const [showConfirmDelete, setShowConfirmDelete] = useState(null)
   const [priorityFilter, setPriorityFilter] = useState("All")
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [showKebabMenu, setShowKebabMenu] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -110,6 +134,17 @@ export default function CategoryDashboard() {
     }
   }, [categoryId, router, isAuthenticated])
 
+  useEffect(() => {
+    // Handle taskId from URL query parameter
+    const taskId = searchParams.get("taskId")
+    if (taskId) {
+      const task = tasks.find((t) => t.id === Number.parseInt(taskId))
+      if (task) {
+        setViewingTask(task)
+      }
+    }
+  }, [searchParams, tasks])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setButtonLoading(true)
@@ -127,6 +162,7 @@ export default function CategoryDashboard() {
           description,
           status: editingTask.status,
           priority: selectedPriority.name,
+          due_date: dueDate || null,
         })
         if (updatedTask) {
           setTasks(tasks.map((task) => (task.id === editingTask.id ? updatedTask : task)))
@@ -139,6 +175,7 @@ export default function CategoryDashboard() {
           status: "Pending",
           category_id: Number.parseInt(categoryId),
           priority: selectedPriority.name,
+          due_date: dueDate || null,
         })
         if (newTask) {
           setTasks([...tasks, newTask])
@@ -154,12 +191,19 @@ export default function CategoryDashboard() {
     }
   }
 
-  const handleEditTask = (task) => {
+  const handleEditTask = (task, fromModal = false) => {
     setTitle(task.title)
     setDescription(task.description || "")
     setSelectedPriority(PRIORITY_TAGS.find((p) => p.name === task.priority) || PRIORITY_TAGS[0])
+    setDueDate(task.due_date ? new Date(task.due_date).toISOString().split("T")[0] : "")
     setEditingTask(task)
     setShowForm(true)
+
+    // Only close the viewing modal if we're not editing from within it
+    if (!fromModal) {
+      setViewingTask(null)
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
@@ -183,6 +227,7 @@ export default function CategoryDashboard() {
     setTitle("")
     setDescription("")
     setSelectedPriority(PRIORITY_TAGS[0])
+    setDueDate("")
     setEditingTask(null)
     setShowForm(false)
   }
@@ -207,6 +252,88 @@ export default function CategoryDashboard() {
   const totalTasks = tasks.length
   const completedTasks = tasks.filter((task) => task.status === "Completed").length
   const inProgressTasks = tasks.filter((task) => task.status === "In Progress").length
+
+  // Update URL when task is selected
+  const updateTaskInUrl = (taskId) => {
+    const url = new URL(window.location.href)
+    if (taskId) {
+      url.searchParams.set("taskId", taskId)
+    } else {
+      url.searchParams.delete("taskId")
+    }
+    router.push(url.pathname + url.search, { scroll: false })
+  }
+
+  const handleStatusChange = async (newStatus) => {
+    if (!viewingTask) return
+
+    try {
+      const updatedTask = await taskService.updateTask(viewingTask.id, {
+        ...viewingTask,
+        status: newStatus,
+      })
+
+      setTasks((prevTasks) => prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)))
+
+      // Close both the kebab menu and the task view modal
+      setShowKebabMenu(false)
+      setViewingTask(null)
+
+      // Update URL to remove taskId parameter
+      const url = new URL(window.location.href)
+      url.searchParams.delete("taskId")
+      router.replace(url.pathname + url.search, { scroll: false })
+
+      toast.success("Task status updated successfully")
+    } catch (error) {
+      console.error("Error updating task status:", error)
+      toast.error("Failed to update task status")
+    }
+  }
+
+  const handleCloseTaskView = () => {
+    setViewingTask(null)
+    setShowKebabMenu(false)
+
+    // Update URL to remove taskId parameter
+    const url = new URL(window.location.href)
+    url.searchParams.delete("taskId")
+    router.replace(url.pathname + url.search, { scroll: false })
+  }
+
+  // Handle initial taskId from URL
+  useEffect(() => {
+    const taskId = searchParams.get("taskId")
+    if (taskId && tasks.length > 0) {
+      const task = tasks.find((t) => t.id === Number.parseInt(taskId))
+      if (task) {
+        setViewingTask(task)
+      } else {
+        // If task not found, remove taskId from URL
+        updateTaskInUrl(null)
+      }
+    }
+  }, [searchParams, tasks])
+
+  // Close modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Don't close if clicking on kebab menu or its dropdown
+      if (event.target.closest(".kebab-menu") || event.target.closest(".kebab-dropdown")) {
+        return
+      }
+
+      // Only close if clicking on the modal backdrop (the dark overlay)
+      if (viewingTask && event.target.classList.contains("modal-backdrop")) {
+        handleCloseTaskView()
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [viewingTask])
 
   if (loading) {
     return (
@@ -524,6 +651,101 @@ export default function CategoryDashboard() {
                       💡 Tip: Include links in your description - they'll be clickable in the task view!
                     </p>
                   </div>
+
+                  <div className="mt-4 sm:mt-6 lg:col-span-2">
+                    <label className="block text-army-dark text-sm font-medium mb-2 sm:mb-3" htmlFor="dueDate">
+                      Due Date
+                    </label>
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const today = new Date().toISOString().split("T")[0]
+                            setDueDate(today)
+                          }}
+                          className={`px-3 py-2 text-xs sm:text-sm rounded-lg transition-colors ${
+                            dueDate === new Date().toISOString().split("T")[0]
+                              ? "bg-army-green-800 text-white"
+                              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                          }`}
+                        >
+                          Today
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const tomorrow = new Date()
+                            tomorrow.setDate(tomorrow.getDate() + 1)
+                            setDueDate(tomorrow.toISOString().split("T")[0])
+                          }}
+                          className={`px-3 py-2 text-xs sm:text-sm rounded-lg transition-colors ${
+                            dueDate ===
+                            new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split("T")[0]
+                              ? "bg-army-green-800 text-white"
+                              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                          }`}
+                        >
+                          Tomorrow
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextWeek = new Date()
+                            nextWeek.setDate(nextWeek.getDate() + 7)
+                            setDueDate(nextWeek.toISOString().split("T")[0])
+                          }}
+                          className={`px-3 py-2 text-xs sm:text-sm rounded-lg transition-colors ${
+                            dueDate ===
+                            new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split("T")[0]
+                              ? "bg-army-green-800 text-white"
+                              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                          }`}
+                        >
+                          Next Week
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDueDate("")}
+                          className={`px-3 py-2 text-xs sm:text-sm rounded-lg transition-colors ${
+                            dueDate === "" ? "bg-gray-300 text-gray-800" : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                          }`}
+                        >
+                          No Due Date
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          id="dueDate"
+                          type="date"
+                          className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-army-green-500 focus:border-transparent transition-all text-sm sm:text-base ${
+                            dueDate ? "border-army-green-500 bg-army-light/30" : ""
+                          }`}
+                          value={dueDate}
+                          onChange={(e) => setDueDate(e.target.value)}
+                          min={new Date().toISOString().split("T")[0]}
+                        />
+                        {dueDate && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs bg-army-green-800 text-white px-2 py-1 rounded-full">
+                            {getDueDateLabel(dueDate)}
+                          </div>
+                        )}
+                      </div>
+
+                      {dueDate && (
+                        <div className="text-xs text-gray-500">
+                          Due{" "}
+                          {new Date(dueDate).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
                     <button
                       type="button"
@@ -564,17 +786,74 @@ export default function CategoryDashboard() {
 
           {/* Task Viewing Modal - Mobile Optimized */}
           {viewingTask && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-start sm:items-center p-2 sm:p-4 overflow-y-auto">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-2 sm:p-4 overflow-y-auto modal-backdrop">
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden mt-4 sm:mt-0">
                 <div className="bg-gradient-to-r from-army-green-800 to-army-green-700 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
                   <h3 className="text-base sm:text-lg font-semibold text-white">Task Details</h3>
-                  <button
-                    className="text-white/80 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
-                    onClick={() => setViewingTask(null)}
-                    aria-label="Close modal"
-                  >
-                    <FaTimes className="text-sm sm:text-base" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="relative kebab-menu">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowKebabMenu(!showKebabMenu)
+                        }}
+                        className="p-2 text-gray-400 hover:text-army-green-800 transition-colors"
+                      >
+                        <FaEllipsisV className="text-sm" />
+                      </button>
+                      {showKebabMenu && (
+                        <div
+                          className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 kebab-dropdown"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={() => handleStatusChange("Pending")}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <FaHourglass className="text-yellow-500" />
+                            Move to Pending
+                            {viewingTask.status === "Pending" && (
+                              <span className="ml-auto text-xs text-gray-500">Current</span>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange("In Progress")}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <FaClock className="text-blue-500" />
+                            Move to In Progress
+                            {viewingTask.status === "In Progress" && (
+                              <span className="ml-auto text-xs text-gray-500">Current</span>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange("Completed")}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <FaCheckCircle className="text-green-500" />
+                            Move to Completed
+                            {viewingTask.status === "Completed" && (
+                              <span className="ml-auto text-xs text-gray-500">Current</span>
+                            )}
+                          </button>
+                          <div className="border-t border-gray-200 my-1"></div>
+                          <button
+                            onClick={() => handleDeleteTask(viewingTask.id)}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <FaTrash className="text-sm" />
+                            Delete Task
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleCloseTaskView}
+                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <FaTimes className="text-sm" />
+                    </button>
+                  </div>
                 </div>
                 <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-120px)]">
                   <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
@@ -598,6 +877,11 @@ export default function CategoryDashboard() {
                     >
                       {viewingTask.priority}
                     </span>
+                    {viewingTask.due_date && (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        Due: {format(new Date(viewingTask.due_date), "MMM d, yyyy")}
+                      </span>
+                    )}
                   </div>
                   <h2
                     className="text-xl sm:text-2xl font-semibold text-army-dark mb-3 sm:mb-4 break-words"
@@ -649,9 +933,10 @@ export default function CategoryDashboard() {
                   </button>
                   <button
                     className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gradient-to-r from-army-green-800 to-army-green-700 text-white rounded-lg font-medium transition-all transform hover:scale-[1.02] hover:-translate-y-0.5 hover:brightness-110 shadow-lg hover:shadow-xl hover:shadow-army-green-800/30 flex items-center justify-center gap-2 order-1 sm:order-2"
-                    onClick={() => {
-                      handleEditTask(viewingTask)
+                    onClick={(e) => {
+                      e.stopPropagation()
                       setViewingTask(null)
+                      handleEditTask(viewingTask, true)
                     }}
                   >
                     <FaEdit className="text-sm" /> Edit
