@@ -1,30 +1,57 @@
 # TaskFlow - Task Management Application
 
-A simple and efficient task management application built with Next.js and FastAPI. Organize your tasks with drag-and-drop functionality, track progress, and manage categories.
+A modern and efficient task management application built with Next.js and FastAPI. Organize your tasks with drag-and-drop functionality, track progress, manage categories, and gain insights into your productivity.
 
 ## Features
 
 - 🔐 **User Authentication**
   - Login/Register with Remember Me
   - Secure JWT authentication
+  - PWA support
 
 - 📋 **Task Management**
   - Create, edit, and delete tasks
   - Drag-and-drop task organization
   - Task categories and progress tracking
   - Visual progress indicators
+  - Priority levels and due dates
+  - Task filtering and sorting
+
+- 📊 **Analytics & Insights**
+  - Task completion statistics
+  - Productivity trends
+  - Category-wise progress
+  - Weekly reports
 
 - 🎨 **User Experience**
   - Clean, responsive design
   - Loading states and error handling
   - Password visibility toggle
+  - Mobile-first approach
+  - Smooth animations and transitions
 
 ## Tech Stack
 
-- **Frontend**: Next.js, Tailwind CSS, React DnD
-- **Backend**: FastAPI, SQLite, SQLAlchemy
-- **Authentication**: JWT, OAuth2
-- **Containerization**: Docker
+- **Frontend**: 
+  - Next.js 14
+  - Tailwind CSS
+  - React DnD
+  - TypeScript
+  - PWA support
+
+- **Backend**: 
+  - FastAPI
+  - SQLite
+  - SQLAlchemy
+  - Pydantic
+
+- **Authentication**: 
+  - JWT
+  - OAuth2
+
+- **Containerization**: 
+  - Docker
+  - Docker Compose
 
 ## Quick Start
 
@@ -81,12 +108,18 @@ docker-compose down
 ## Project Structure
 ```
 taskflow_project/
-├── frontend/          # Next.js frontend
+├── frontend/                # Next.js frontend
 │   ├── src/
-│   │   ├── app/      # Pages and routes
-│   │   ├── components/ # React components
-│   │   └── services/  # API services
-└── backend/           # FastAPI backend
-    ├── routers/      # API endpoints
-    └── models.py     # Database models
-```
+│   │   ├── app/            # Pages and routes
+│   │   ├── components/     # React components
+│   │   ├── services/       # API services
+│   │   ├── contexts/       # React contexts
+│   │   ├── styles/         # Global styles
+│   │   └── config.ts       # App configuration
+│   ├── public/             # Static assets
+│   └── scripts/            # Build scripts
+└── backend/                # FastAPI backend
+    ├── routers/            # API endpoints
+    ├── models.py           # Database models
+    ├── schemas.py          # Pydantic schemas
+    └── database.py         # Database configuration
