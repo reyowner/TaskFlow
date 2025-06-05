@@ -24,6 +24,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { DndProvider, useDrag, useDrop } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
 import { TouchBackend } from "react-dnd-touch-backend"
+import { MouseTransition, TouchTransition } from "dnd-multi-backend"
+import { MultiBackend } from "react-dnd-multi-backend"
 import categoryService from "@/services/categoryService"
 import taskService from "@/services/taskService"
 import { toast } from "react-hot-toast"
@@ -45,6 +47,21 @@ const isTouchDevice = () => {
   return "ontouchstart" in window || navigator.maxTouchPoints > 0
 }
 
+// Configure the multi-backend
+const backendConfig = {
+  backends: [
+    {
+      backend: HTML5Backend,
+      transition: MouseTransition,
+    },
+    {
+      backend: TouchBackend,
+      options: { enableMouseEvents: true },
+      transition: TouchTransition,
+    },
+  ],
+}
+
 export default function CategoryDashboard() {
   const { categoryId } = useParams()
   const router = useRouter()
@@ -62,9 +79,6 @@ export default function CategoryDashboard() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(null)
   const [priorityFilter, setPriorityFilter] = useState("All")
   const [showMobileFilters, setShowMobileFilters] = useState(false)
-
-  // Choose backend based on device type
-  const dndBackend = isTouchDevice() ? TouchBackend : HTML5Backend
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -225,7 +239,7 @@ export default function CategoryDashboard() {
   }
 
   return (
-    <DndProvider backend={dndBackend}>
+    <DndProvider backend={MultiBackend} options={backendConfig}>
       <div className="min-h-screen bg-army-light">
         {/* Mobile-First Header Section - FIXED */}
         <div className="backdrop-blur-sm top-0 z-40">
