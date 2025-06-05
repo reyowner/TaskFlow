@@ -79,7 +79,7 @@ export default function Login() {
           localStorage.removeItem('rememberedUsername');
           localStorage.removeItem('rememberedPassword');
         }
-        router.push('/categories');
+        router.push('/overview');
       } else {
         setError('Invalid username or password');
       }

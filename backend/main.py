@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, tasks, categories, tags
+from routers import auth, tasks, categories, tags, insights
 from database import engine
 import models
 
@@ -16,6 +16,8 @@ origins = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    # Mobile device URL
+    "http://192.168.100.13:3000",
     # Production URLs
     "https://task-flow-xxm5.onrender.com", # Render Frontend URL
 ]
@@ -35,6 +37,7 @@ app.include_router(auth.router)
 app.include_router(tasks.router)
 app.include_router(categories.router)
 app.include_router(tags.router)
+app.include_router(insights.router)
 
 @app.get("/")
 async def root():

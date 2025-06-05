@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import Navbar from "./Navbar"
@@ -12,11 +12,17 @@ const ClientLayout = ({ children }) => {
   const auth = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const [isStandalone, setIsStandalone] = useState(false)
 
   const publicRoutes = ["/login", "/register", "/"]
   const isPublicRoute = publicRoutes.includes(pathname)
 
   useEffect(() => {
+    // Check if the app is running in standalone mode (installed PWA)
+    if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true) {
+      setIsStandalone(true)
+    }
+
     // Don't do anything while still loading
     if (auth?.loading) {
       return
@@ -28,9 +34,9 @@ const ClientLayout = ({ children }) => {
       return
     }
 
-    // If user is authenticated and on home page, redirect to categories
+    // If user is authenticated and on home page, redirect to overview
     if (auth?.isAuthenticated && pathname === "/") {
-      router.push("/categories")
+      router.push("/overview")
       return
     }
   }, [auth?.isAuthenticated, auth?.loading, router, isPublicRoute, pathname])
@@ -39,8 +45,32 @@ const ClientLayout = ({ children }) => {
   if (auth?.loading) {
     return (
       <>
-        <Toaster position="top-right" />
-        <Navbar />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            // Mobile-optimized toast styling
+            style: {
+              fontSize: "14px",
+              padding: "12px 16px",
+              maxWidth: "90vw",
+              borderRadius: "8px",
+            },
+            success: {
+              style: {
+                background: "#6b7040",
+                color: "white",
+              },
+            },
+            error: {
+              style: {
+                background: "#dc2626",
+                color: "white",
+              },
+            },
+            duration: 1500,
+          }}
+        />
+        <Navbar isStandalone={isStandalone} />
         <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-army-light border-t-army-green-800 rounded-full animate-spin mx-auto mb-4"></div>
@@ -53,8 +83,33 @@ const ClientLayout = ({ children }) => {
 
   return (
     <>
-      <Toaster position="top-right" />
-      <Navbar />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          // Mobile-optimized toast styling
+          style: {
+            fontSize: "14px",
+            padding: "12px 16px",
+            maxWidth: "90vw",
+            borderRadius: "8px",
+          },
+          success: {
+            style: {
+              background: "#6b7040",
+              color: "white",
+            },
+          },
+          error: {
+            style: {
+              background: "#dc2626",
+              color: "white",
+            },
+          },
+          duration: 1500,
+        }}
+      />
+      <Navbar isStandalone={isStandalone} />
+
       <main className="flex-grow container mx-auto px-4 py-8">{children}</main>
       <footer className="bg-army-green-800 text-white py-6">
         <div className="container mx-auto px-4">

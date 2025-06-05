@@ -98,3 +98,32 @@ class TaskResponse(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class ActivityBase(BaseModel):
+    type: str  # "task_completion", "task_creation", "category_addition"
+    description: str
+    timestamp: datetime
+
+class Activity(ActivityBase):
+    id: int
+    user_id: int
+
+    class Config:
+        from_attributes = True
+
+class WeeklyInsights(BaseModel):
+    tasks_created_this_week: int
+    tasks_completed_this_week: int
+    productivity_trend: float  # percentage change from last week
+    high_priority_tasks: int
+
+class HighPriorityTask(Task):
+    days_remaining: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+class InsightsResponse(BaseModel):
+    high_priority_tasks: List[HighPriorityTask]
+    recent_activities: List[Activity]
+    weekly_insights: WeeklyInsights

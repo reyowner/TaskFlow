@@ -24,6 +24,7 @@ class User(Base):
     tasks = relationship("Task", back_populates="owner")
     categories = relationship("Category", back_populates="owner")
     tags = relationship("Tag", back_populates="owner")
+    activities = relationship("Activity", back_populates="user")
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -65,3 +66,14 @@ class Tag(Base):
     
     owner = relationship("User", back_populates="tags")
     tasks = relationship("Task", secondary=task_tags, back_populates="tags")
+
+class Activity(Base):
+    __tablename__ = "activities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String)  # task_completion, task_creation, category_addition
+    description = Column(String)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    user = relationship("User", back_populates="activities")
