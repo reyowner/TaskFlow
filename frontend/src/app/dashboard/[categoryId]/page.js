@@ -103,6 +103,11 @@ export default function CategoryDashboard() {
   const [priorityFilter, setPriorityFilter] = useState("All")
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [showKebabMenu, setShowKebabMenu] = useState(false)
+  const [showCategoryKebabMenu, setShowCategoryKebabMenu] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showStatusMenu, setShowStatusMenu] = useState(false)
+  const buttonRef = useRef(null)
+  const menuRef = useRef(null)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -210,12 +215,12 @@ export default function CategoryDashboard() {
   const handleDeleteTask = async (taskId) => {
     try {
       await taskService.deleteTask(taskId)
-      setTasks(tasks.filter((task) => task.id !== taskId))
-      setShowConfirmDelete(null)
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
+      setShowStatusMenu(false)
+      setViewingTask(null)
       toast.success("Task deleted successfully")
-    } catch (err) {
-      toast.error("Failed to delete task. Please try again.")
-      console.error(err)
+    } catch (error) {
+      console.error("Error deleting task:", error)
     }
   }
 
@@ -294,11 +299,10 @@ export default function CategoryDashboard() {
   const handleCloseTaskView = () => {
     setViewingTask(null)
     setShowKebabMenu(false)
-
     // Update URL to remove taskId parameter
     const url = new URL(window.location.href)
-    url.searchParams.delete("taskId")
-    router.replace(url.pathname + url.search, { scroll: false })
+    url.searchParams.delete('taskId')
+    window.history.replaceState({}, '', url)
   }
 
   // Handle initial taskId from URL
@@ -334,6 +338,51 @@ export default function CategoryDashboard() {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [viewingTask])
+
+  const handleDeleteCategory = async () => {
+    try {
+      await categoryService.deleteCategory(categoryId)
+      toast.success("Category deleted successfully")
+      router.push("/categories")
+    } catch (error) {
+      console.error("Error deleting category:", error)
+      toast.error("Failed to delete category")
+    }
+  }
+
+  const toggleStatusMenu = (e) => {
+    e.stopPropagation()
+    setShowStatusMenu(!showStatusMenu)
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target)
+      ) {
+        setShowStatusMenu(false)
+      }
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowStatusMenu(false)
+      }
+    }
+
+    if (showStatusMenu) {
+      document.addEventListener("mousedown", handleClickOutside)
+      document.addEventListener("keydown", handleEscape)
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside)
+        document.removeEventListener("keydown", handleEscape)
+      }
+    }
+  }, [showStatusMenu])
 
   if (loading) {
     return (
@@ -437,7 +486,31 @@ export default function CategoryDashboard() {
                         <FaFolder className="text-white text-xl" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h1 className="text-3xl font-bold text-army-dark truncate">{category.name}</h1>
+                        <div className="flex items-center justify-between">
+                          <h1 className="text-3xl font-bold text-army-dark truncate">{category.name}</h1>
+                          <div className="relative">
+                            <button
+                              onClick={() => setShowCategoryKebabMenu(!showCategoryKebabMenu)}
+                              className="p-2 text-gray-400 hover:text-army-dark transition-colors"
+                            >
+                              <FaEllipsisV className="text-sm" />
+                            </button>
+                            {showCategoryKebabMenu && (
+                              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                                <button
+                                  onClick={() => {
+                                    setShowCategoryKebabMenu(false)
+                                    setShowDeleteConfirm(true)
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <FaTrash className="text-sm" />
+                                  Delete Category
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                         <p className="text-gray-600 mt-1 text-base">
                           {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
                         </p>
@@ -791,65 +864,78 @@ export default function CategoryDashboard() {
                 <div className="bg-gradient-to-r from-army-green-800 to-army-green-700 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
                   <h3 className="text-base sm:text-lg font-semibold text-white">Task Details</h3>
                   <div className="flex items-center gap-2">
-                    <div className="relative kebab-menu">
+                    <div className="relative">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setShowKebabMenu(!showKebabMenu)
-                        }}
-                        className="p-2 text-gray-400 hover:text-army-green-800 transition-colors"
+                        ref={buttonRef}
+                        onClick={toggleStatusMenu}
+                        className="p-1.5 text-sm rounded-md text-gray-400 hover:text-white transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white"
+                        title="More options"
+                        aria-label="More options"
+                        aria-expanded={showStatusMenu}
+                        aria-haspopup="true"
                       >
-                        <FaEllipsisV className="text-sm" />
+                        <FaEllipsisV />
                       </button>
-                      {showKebabMenu && (
+
+                      {/* Enhanced Status Menu - Mobile Optimized */}
+                      {showStatusMenu && (
                         <div
-                          className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 kebab-dropdown"
-                          onClick={(e) => e.stopPropagation()}
+                          ref={menuRef}
+                          className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] min-w-[180px] overflow-hidden"
+                          role="menu"
+                          aria-orientation="vertical"
+                          aria-labelledby="status-menu"
                         >
-                          <button
-                            onClick={() => handleStatusChange("Pending")}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                          >
-                            <FaHourglass className="text-yellow-500" />
-                            Move to Pending
-                            {viewingTask.status === "Pending" && (
-                              <span className="ml-auto text-xs text-gray-500">Current</span>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleStatusChange("In Progress")}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                          >
-                            <FaClock className="text-blue-500" />
-                            Move to In Progress
-                            {viewingTask.status === "In Progress" && (
-                              <span className="ml-auto text-xs text-gray-500">Current</span>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleStatusChange("Completed")}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                          >
-                            <FaCheckCircle className="text-green-500" />
-                            Move to Completed
-                            {viewingTask.status === "Completed" && (
-                              <span className="ml-auto text-xs text-gray-500">Current</span>
-                            )}
-                          </button>
-                          <div className="border-t border-gray-200 my-1"></div>
-                          <button
-                            onClick={() => handleDeleteTask(viewingTask.id)}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                          >
-                            <FaTrash className="text-sm" />
-                            Delete Task
-                          </button>
+                          <div className="py-1">
+                            <div className="px-3 sm:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                              Move to Status
+                            </div>
+                            <button
+                              onClick={() => handleStatusChange("Pending")}
+                              className="w-full px-3 sm:px-4 py-2 text-black text-left text-sm hover:bg-yellow-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-yellow-50"
+                              role="menuitem"
+                              disabled={viewingTask.status === "Pending"}
+                            >
+                              <FaHourglass className="text-yellow-500" />
+                              <span>Pending</span>
+                              {viewingTask.status === "Pending" && <span className="ml-auto text-xs text-gray-500">Current</span>}
+                            </button>
+                            <button
+                              onClick={() => handleStatusChange("In Progress")}
+                              className="w-full px-3 sm:px-4 py-2 text-black text-left text-sm hover:bg-blue-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-blue-50"
+                              role="menuitem"
+                              disabled={viewingTask.status === "In Progress"}
+                            >
+                              <FaClock className="text-blue-500" />
+                              <span>In Progress</span>
+                              {viewingTask.status === "In Progress" && <span className="ml-auto text-xs text-gray-500">Current</span>}
+                            </button>
+                            <button
+                              onClick={() => handleStatusChange("Completed")}
+                              className="w-full px-3 sm:px-4 py-2 text-black text-left text-sm hover:bg-green-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-green-50"
+                              role="menuitem"
+                              disabled={viewingTask.status === "Completed"}
+                            >
+                              <FaCheckCircle className="text-green-500" />
+                              <span>Completed</span>
+                              {viewingTask.status === "Completed" && <span className="ml-auto text-xs text-gray-500">Current</span>}
+                            </button>
+                            <div className="border-t border-gray-200 my-1"></div>
+                            <button
+                              onClick={() => handleDeleteTask(viewingTask.id)}
+                              className="w-full px-3 sm:px-4 py-2 text-red-600 text-left text-sm hover:bg-red-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-red-50"
+                              role="menuitem"
+                            >
+                              <FaTrash className="text-sm" />
+                              Delete Task
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
                     <button
                       onClick={handleCloseTaskView}
-                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="p-2 text-gray-400 hover:text-white transition-colors"
                     >
                       <FaTimes className="text-sm" />
                     </button>
@@ -923,24 +1009,24 @@ export default function CategoryDashboard() {
                   ) : (
                     <p className="text-gray-500 italic text-sm sm:text-base">No description provided</p>
                   )}
-                </div>
-                <div className="border-t border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row justify-end gap-3">
-                  <button
-                    className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all order-2 sm:order-1"
-                    onClick={() => setViewingTask(null)}
-                  >
-                    Close
-                  </button>
-                  <button
-                    className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gradient-to-r from-army-green-800 to-army-green-700 text-white rounded-lg font-medium transition-all transform hover:scale-[1.02] hover:-translate-y-0.5 hover:brightness-110 shadow-lg hover:shadow-xl hover:shadow-army-green-800/30 flex items-center justify-center gap-2 order-1 sm:order-2"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setViewingTask(null)
-                      handleEditTask(viewingTask, true)
-                    }}
-                  >
-                    <FaEdit className="text-sm" /> Edit
-                  </button>
+                  <div className="border-t border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row justify-end gap-3">
+                    <button
+                      className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all order-2 sm:order-1"
+                      onClick={handleCloseTaskView}
+                    >
+                      Close
+                    </button>
+                    <button
+                      className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gradient-to-r from-army-green-800 to-army-green-700 text-white rounded-lg font-medium transition-all transform hover:scale-[1.02] hover:-translate-y-0.5 hover:brightness-110 shadow-lg hover:shadow-xl hover:shadow-army-green-800/30 flex items-center justify-center gap-2 order-1 sm:order-2"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCloseTaskView()
+                        handleEditTask(viewingTask, true)
+                      }}
+                    >
+                      <FaEdit className="text-sm" /> Edit
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -971,6 +1057,32 @@ export default function CategoryDashboard() {
                       Delete
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+              <div className="bg-white rounded-xl p-6 max-w-md w-full">
+                <h3 className="text-lg font-semibold text-army-dark mb-4">Delete Category</h3>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete this category? This will also delete all tasks in this category. This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteCategory}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>
@@ -1173,7 +1285,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 underline break-all"
+            className="text-blue-600 hover:text-blue-800 underline break-all inline-block"
             onClick={(e) => e.stopPropagation()}
           >
             {part.length > 30 ? `${part.substring(0, 30)}...` : part}
@@ -1267,36 +1379,10 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
                   role="menuitem"
                   disabled={task.status === "Completed"}
                 >
-                  <FaCheck className="text-green-500" />
+                  <FaCheckCircle className="text-green-500" />
                   <span>Completed</span>
                   {task.status === "Completed" && <span className="ml-auto text-xs text-gray-500">Current</span>}
                 </button>
-                <div className="border-t border-gray-100 mt-1 pt-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEditTask(task)
-                      setShowStatusMenu(false)
-                    }}
-                    className="w-full px-3 sm:px-4 py-2 text-black text-left text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-gray-50"
-                    role="menuitem"
-                  >
-                    <FaEdit className="text-gray-500" />
-                    <span>Edit Task</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onDeleteTask(task.id)
-                      setShowStatusMenu(false)
-                    }}
-                    className="w-full px-3 sm:px-4 py-2 text-red-600 text-left text-sm hover:bg-red-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-red-50"
-                    role="menuitem"
-                  >
-                    <FaTrash className="text-red-500" />
-                    <span>Delete Task</span>
-                  </button>
-                </div>
               </div>
             </div>
           )}
