@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback, memo } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import {
   FaPlus,
@@ -26,10 +26,12 @@ import { HTML5Backend } from "react-dnd-html5-backend"
 import { TouchBackend } from "react-dnd-touch-backend"
 import { MouseTransition, TouchTransition } from "dnd-multi-backend"
 import { MultiBackend } from "react-dnd-multi-backend"
+import { getEmptyImage } from "react-dnd-html5-backend"
 import categoryService from "@/services/categoryService"
 import taskService from "@/services/taskService"
 import { toast } from "react-hot-toast"
 import { format } from "date-fns"
+import { FixedSizeList as List } from "react-window"
 
 const PRIORITY_TAGS = [
   { name: "High", color: "#EF4444", bgColor: "#FEE2E2", lightBg: "bg-red-50", darkBg: "bg-red-100" },
@@ -1094,16 +1096,8 @@ export default function CategoryDashboard() {
 }
 
 // Mobile-Optimized TaskColumn component
-function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewTask, icon, categoryColor }) {
-  const [{ isOver }, drop] = useDrop({
-    accept: "TASK",
-    drop: (item) => moveTask(item.id, status),
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-    }),
-  })
-
-  const moveTask = async (taskId, newStatus) => {
+const TaskColumn = memo(function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewTask, icon, categoryColor }) {
+  const moveTask = useCallback(async (taskId, newStatus) => {
     try {
       const updatedTask = await taskService.updateTask(taskId, { status: newStatus })
       if (updatedTask) {
@@ -1114,7 +1108,15 @@ function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewT
       console.error("Failed to move task", err)
       toast.error("Failed to update task status")
     }
-  }
+  }, [setTasks])
+
+  const [{ isOver }, drop] = useDrop({
+    accept: "TASK",
+    drop: (item) => moveTask(item.id, status),
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  })
 
   const getColumnColor = (status) => {
     switch (status) {
@@ -1130,6 +1132,22 @@ function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewT
   }
 
   const colors = getColumnColor(status)
+
+  const TaskRow = useCallback(({ index, style }) => {
+    const task = tasks[index]
+    return (
+      <div style={style}>
+        <TaskCard
+          task={task}
+          onEditTask={onEditTask}
+          onDeleteTask={onDeleteTask}
+          onViewTask={onViewTask}
+          setTasks={setTasks}
+          categoryColor={categoryColor}
+        />
+      </div>
+    )
+  }, [tasks, onEditTask, onDeleteTask, onViewTask, setTasks, categoryColor])
 
   return (
     <div
@@ -1149,21 +1167,17 @@ function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewT
           </span>
         </div>
       </div>
-      <div className="p-2 sm:p-3 flex-grow overflow-y-auto">
+      <div className="p-2 sm:p-3 flex-grow overflow-hidden">
         {tasks && tasks.length > 0 ? (
-          <div className="space-y-2 sm:space-y-3">
-            {tasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onEditTask={onEditTask}
-                onDeleteTask={onDeleteTask}
-                onViewTask={onViewTask}
-                setTasks={setTasks}
-                categoryColor={categoryColor}
-              />
-            ))}
-          </div>
+          <List
+            height={400}
+            itemCount={tasks.length}
+            itemSize={100}
+            width="100%"
+            className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+          >
+            {TaskRow}
+          </List>
         ) : (
           <div className="text-center py-6 sm:py-8 text-gray-400">
             <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 rounded-full bg-gray-100 flex items-center justify-center">
@@ -1176,17 +1190,30 @@ function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewT
       </div>
     </div>
   )
-}
+})
+
+// Custom Drag Preview Component
+const DragPreview = memo(function DragPreview({ task }) {
+  return (
+    <div className="p-3 bg-white rounded-lg shadow-lg border-l-4 border-army-green-500 max-w-[300px]">
+      <h3 className="font-medium text-sm truncate">{task.title}</h3>
+    </div>
+  )
+})
 
 // Mobile-Optimized TaskCard component
-function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, categoryColor }) {
-  const [{ isDragging }, drag] = useDrag({
+const TaskCard = memo(function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, categoryColor }) {
+  const [{ isDragging }, drag, preview] = useDrag({
     type: "TASK",
     item: { id: task.id },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
   })
+
+  useEffect(() => {
+    preview(getEmptyImage(), { captureDraggingState: true })
+  }, [preview])
 
   const [showActions, setShowActions] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
@@ -1213,7 +1240,7 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
     }
   }
 
-  const handleStatusChange = async (newStatus) => {
+  const handleStatusChange = useCallback(async (newStatus) => {
     try {
       const updatedTask = await taskService.updateTask(task.id, { status: newStatus })
       if (updatedTask) {
@@ -1225,12 +1252,12 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
       toast.error("Failed to update task status")
     }
     setShowStatusMenu(false)
-  }
+  }, [task.id, setTasks])
 
-  const toggleStatusMenu = (e) => {
+  const toggleStatusMenu = useCallback((e) => {
     e.stopPropagation()
     setShowStatusMenu(!showStatusMenu)
-  }
+  }, [showStatusMenu])
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -1452,4 +1479,4 @@ function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, catego
       </div>
     </div>
   )
-}
+})
