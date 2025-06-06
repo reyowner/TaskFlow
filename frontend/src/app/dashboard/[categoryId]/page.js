@@ -218,11 +218,11 @@ export default function CategoryDashboard() {
     try {
       await taskService.deleteTask(taskId)
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
-      setShowStatusMenu(false)
-      setViewingTask(null)
       toast.success("Task deleted successfully")
-    } catch (error) {
-      console.error("Error deleting task:", error)
+      setShowConfirmDelete(null)
+    } catch (err) {
+      console.error("Failed to delete task", err)
+      toast.error("Failed to delete task")
     }
   }
 
@@ -922,15 +922,6 @@ export default function CategoryDashboard() {
                               <span>Completed</span>
                               {viewingTask.status === "Completed" && <span className="ml-auto text-xs text-gray-500">Current</span>}
                             </button>
-                            <div className="border-t border-gray-200 my-1"></div>
-                            <button
-                              onClick={() => handleDeleteTask(viewingTask.id)}
-                              className="w-full px-3 sm:px-4 py-2 text-red-600 text-left text-sm hover:bg-red-50 flex items-center gap-2 transition-colors focus:outline-none focus:bg-red-50"
-                              role="menuitem"
-                            >
-                              <FaTrash className="text-sm" />
-                              Delete Task
-                            </button>
                           </div>
                         </div>
                       )}
@@ -1136,7 +1127,7 @@ const TaskColumn = memo(function TaskColumn({ status, tasks, setTasks, onEditTas
   const TaskRow = useCallback(({ index, style }) => {
     const task = tasks[index]
     return (
-      <div style={style}>
+      <div style={{ ...style, padding: '0 8px' }}>
         <TaskCard
           task={task}
           onEditTask={onEditTask}
@@ -1172,7 +1163,7 @@ const TaskColumn = memo(function TaskColumn({ status, tasks, setTasks, onEditTas
           <List
             height={400}
             itemCount={tasks.length}
-            itemSize={125}
+            itemSize={140}
             width="100%"
             className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
           >
@@ -1200,6 +1191,28 @@ const DragPreview = memo(function DragPreview({ task }) {
     </div>
   )
 })
+
+// Helper function to detect URLs in text
+const detectUrls = (text) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return text.split(urlRegex).map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 break-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
 
 // Mobile-Optimized TaskCard component
 const TaskCard = memo(function TaskCard({ task, onEditTask, onDeleteTask, onViewTask, setTasks, categoryColor }) {
@@ -1331,43 +1344,48 @@ const TaskCard = memo(function TaskCard({ task, onEditTask, onDeleteTask, onView
     <div
       ref={drag}
       className={`p-3 sm:p-4 bg-white rounded-lg shadow-sm mb-2 sm:mb-3 border-l-4 ${getBorderColor(task.status)} 
-        ${isDragging ? "opacity-50" : ""} hover:shadow-md transition-shadow cursor-grab relative group`}
+        ${isDragging ? "opacity-50" : ""} hover:shadow-md transition-shadow cursor-grab relative group h-[120px] flex flex-col`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => {
         setShowActions(false)
         if (!showStatusMenu) setShowStatusMenu(false)
       }}
     >
-      <div className="flex justify-between items-start gap-2">
-        <div className="flex-1 min-w-0">
+      <div className="flex justify-between items-start gap-2 flex-1 min-h-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <h3
-            className="font-medium cursor-pointer hover:text-army-green-800 transition-colors break-words hyphens-auto text-sm sm:text-base"
+            className="font-medium cursor-pointer hover:text-army-green-800 transition-colors text-sm sm:text-base line-clamp-1"
             onClick={() => onViewTask(task)}
-            style={{
-              wordBreak: "break-word",
-              overflowWrap: "break-word",
-              hyphens: "auto",
-            }}
             title={task.title}
           >
-            {truncateText(task.title, 50)}
+            {task.title}
           </h3>
-          <p className="text-xs text-gray-500 mt-1">{formattedDate}</p>
+          {task.description && (
+            <p className="text-xs text-gray-500 mt-1 line-clamp-2 overflow-hidden">
+              {detectUrls(task.description)}
+            </p>
+          )}
+          <p className="text-xs text-gray-500 mt-1 truncate">{formattedDate}</p>
         </div>
         <div className="flex-shrink-0 relative">
-          <button
-            ref={buttonRef}
-            onClick={toggleStatusMenu}
-            className="p-1.5 text-sm rounded-md text-gray-600 hover:bg-gray-100 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-army-green-500"
-            title="More options"
-            aria-label="More options"
-            aria-expanded={showStatusMenu}
-            aria-haspopup="true"
-          >
-            <FaEllipsisV />
-          </button>
-
-          {/* Enhanced Status Menu - Mobile Optimized */}
+          <div className="flex items-center gap-1">
+            <div
+              className={`w-2 h-2 rounded-full ${
+                task.priority === "High"
+                  ? "bg-red-500"
+                  : task.priority === "Medium"
+                  ? "bg-yellow-500"
+                  : "bg-green-500"
+              }`}
+            />
+            <button
+              ref={buttonRef}
+              onClick={toggleStatusMenu}
+              className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <FaEllipsisV className="text-sm" />
+            </button>
+          </div>
           {showStatusMenu && (
             <div
               ref={menuRef}
@@ -1416,26 +1434,7 @@ const TaskCard = memo(function TaskCard({ task, onEditTask, onDeleteTask, onView
         </div>
       </div>
 
-      {task.description && (
-        <div
-          className="text-xs sm:text-sm text-gray-600 mt-2 break-words"
-          style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
-        >
-          <div className="line-clamp-2">{renderTextWithLinks(truncateText(task.description, 100))}</div>
-        </div>
-      )}
-
-      <div className="mt-2 flex items-center justify-between">
-        <span
-          className="text-xs font-medium px-2 py-1 rounded-full"
-          style={{
-            backgroundColor: priorityTag.bgColor,
-            color: priorityTag.color,
-          }}
-        >
-          {task.priority}
-        </span>
-
+      <div className="mt-2 flex items-center justify-end">
         {/* Action buttons - Always visible on mobile, hover on desktop */}
         <div
           className={`flex gap-1 transition-opacity duration-200 ${
