@@ -392,7 +392,7 @@ export default function CategoriesPage() {
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-army-light border-t-army-green-800 rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-600 font-medium text-sm sm:text-base">Loading your categories...</p>
             </div>
           </div>
