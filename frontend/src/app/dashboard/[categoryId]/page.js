@@ -32,6 +32,7 @@ import taskService from "@/services/taskService"
 import { toast } from "react-hot-toast"
 import { format } from "date-fns"
 import { FixedSizeList as List } from "react-window"
+import debounce from "lodash/debounce"
 
 const PRIORITY_TAGS = [
   { name: "High", color: "#EF4444", bgColor: "#FEE2E2", lightBg: "bg-red-50", darkBg: "bg-red-100" },
@@ -1097,22 +1098,51 @@ export default function CategoryDashboard() {
 
 // Mobile-Optimized TaskColumn component
 const TaskColumn = memo(function TaskColumn({ status, tasks, setTasks, onEditTask, onDeleteTask, onViewTask, icon, categoryColor }) {
-  const moveTask = useCallback(async (taskId, newStatus) => {
-    try {
-      const updatedTask = await taskService.updateTask(taskId, { status: newStatus })
-      if (updatedTask) {
-        setTasks((prevTasks) => prevTasks.map((task) => (task.id === taskId ? updatedTask : task)))
-        toast.success(`Task moved to ${newStatus}`)
+  const moveTask = useCallback(
+    debounce(async (taskId, newStatus) => {
+      try {
+        const updatedTask = await taskService.updateTask(taskId, { status: newStatus })
+        if (updatedTask) {
+          setTasks((prevTasks) => prevTasks.map((task) => (task.id === taskId ? updatedTask : task)))
+        }
+      } catch (err) {
+        console.error("Failed to move task", err)
+        toast.error("Failed to update task status")
+        // Revert the optimistic update on error
+        setTasks((prevTasks) => prevTasks.map((task) => {
+          if (task.id === taskId) {
+            return { ...task, status: task.previousStatus }
+          }
+          return task
+        }))
       }
-    } catch (err) {
-      console.error("Failed to move task", err)
-      toast.error("Failed to update task status")
-    }
-  }, [setTasks])
+    }, 300),
+    [setTasks]
+  )
 
   const [{ isOver }, drop] = useDrop({
     accept: "TASK",
-    drop: (item) => moveTask(item.id, status),
+    drop: (item) => {
+      // Optimistic update
+      setTasks((prevTasks) => {
+        const taskToUpdate = prevTasks.find((task) => task.id === item.id)
+        if (!taskToUpdate) return prevTasks
+
+        return prevTasks.map((task) => {
+          if (task.id === item.id) {
+            return {
+              ...task,
+              previousStatus: task.status, // Store the previous status for rollback
+              status: status
+            }
+          }
+          return task
+        })
+      })
+
+      // Debounced API call
+      moveTask(item.id, status)
+    },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
     }),
@@ -1136,7 +1166,11 @@ const TaskColumn = memo(function TaskColumn({ status, tasks, setTasks, onEditTas
   const TaskRow = useCallback(({ index, style }) => {
     const task = tasks[index]
     return (
-      <div style={style}>
+      <div style={{
+        ...style,
+        paddingTop: index === 0 ? 0 : 8, // Add padding between items, but not before the first item
+        paddingBottom: index === tasks.length - 1 ? 0 : 8, // Add padding between items, but not after the last item
+      }}>
         <TaskCard
           task={task}
           onEditTask={onEditTask}
@@ -1172,7 +1206,7 @@ const TaskColumn = memo(function TaskColumn({ status, tasks, setTasks, onEditTas
           <List
             height={400}
             itemCount={tasks.length}
-            itemSize={100}
+            itemSize={116} // Increased to account for padding (100 + 16)
             width="100%"
             className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
           >
@@ -1240,19 +1274,28 @@ const TaskCard = memo(function TaskCard({ task, onEditTask, onDeleteTask, onView
     }
   }
 
-  const handleStatusChange = useCallback(async (newStatus) => {
-    try {
-      const updatedTask = await taskService.updateTask(task.id, { status: newStatus })
-      if (updatedTask) {
-        setTasks((prevTasks) => prevTasks.map((t) => (t.id === task.id ? updatedTask : t)))
-        toast.success(`Task moved to ${newStatus}`)
+  const handleStatusChange = useCallback(
+    debounce(async (newStatus) => {
+      try {
+        const updatedTask = await taskService.updateTask(task.id, { status: newStatus })
+        if (updatedTask) {
+          setTasks((prevTasks) => prevTasks.map((t) => (t.id === task.id ? updatedTask : t)))
+        }
+      } catch (err) {
+        console.error("Failed to update task status", err)
+        toast.error("Failed to update task status")
+        // Revert the optimistic update on error
+        setTasks((prevTasks) => prevTasks.map((t) => {
+          if (t.id === task.id) {
+            return { ...t, status: t.previousStatus }
+          }
+          return t
+        }))
       }
-    } catch (err) {
-      console.error("Failed to update task status", err)
-      toast.error("Failed to update task status")
-    }
-    setShowStatusMenu(false)
-  }, [task.id, setTasks])
+      setShowStatusMenu(false)
+    }, 300),
+    [task.id, setTasks]
+  )
 
   const toggleStatusMenu = useCallback((e) => {
     e.stopPropagation()
