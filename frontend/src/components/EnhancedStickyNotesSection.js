@@ -192,7 +192,7 @@ const EnhancedStickyNotesSection = ({
       </form>
 
       {/* Notes Display */}
-      <div className="space-y-4 max-h-[350px] overflow-y-auto">
+      <div className="space-y-4 max-h-[350px] overflow-y-auto p-2">
         {filteredReminders.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
