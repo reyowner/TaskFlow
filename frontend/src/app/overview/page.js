@@ -16,10 +16,17 @@ import {
   FaFire,
   FaTrophy,
   FaEye,
+  FaStickyNote,
+  FaTrash,
+  FaEdit,
+  FaSave,
+  FaTimes,
 } from "react-icons/fa"
 import categoryService from "@/services/categoryService"
 import taskService from "@/services/taskService"
+import reminderService from '@/services/reminderService'
 import { toast } from "react-hot-toast"
+import EnhancedStickyNotesSection from '@/components/EnhancedStickyNotesSection'
 
 export default function OverviewPage() {
   const { user, isAuthenticated } = useAuth()
@@ -42,6 +49,10 @@ export default function OverviewPage() {
     tasksCompleted: 0,
     productivityTrend: 0,
   })
+  const [reminders, setReminders] = useState([])
+  const [reminderInput, setReminderInput] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editingContent, setEditingContent] = useState('')
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -49,6 +60,7 @@ export default function OverviewPage() {
       return
     }
     fetchOverviewData()
+    fetchReminders()
   }, [isAuthenticated, router])
 
   const fetchOverviewData = async () => {
@@ -107,6 +119,60 @@ export default function OverviewPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchReminders = async () => {
+    try {
+      const data = await reminderService.getReminders()
+      setReminders(data)
+    } catch (error) {
+      toast.error('Failed to load reminders')
+    }
+  }
+
+  const handleAddReminder = async (e) => {
+    e.preventDefault()
+    if (!reminderInput.trim()) return
+    try {
+      const newReminder = await reminderService.createReminder({ content: reminderInput })
+      setReminders([newReminder, ...reminders])
+      setReminderInput('')
+      toast.success('Reminder added!')
+    } catch (error) {
+      toast.error('Failed to add reminder')
+    }
+  }
+
+  const handleDeleteReminder = async (id) => {
+    try {
+      await reminderService.deleteReminder(id)
+      setReminders(reminders.filter(r => r.id !== id))
+      toast.success('Reminder deleted!')
+    } catch (error) {
+      toast.error('Failed to delete reminder')
+    }
+  }
+
+  const handleEditReminder = (id, content) => {
+    setEditingId(id)
+    setEditingContent(content)
+  }
+
+  const handleSaveEdit = async (id) => {
+    try {
+      const updated = await reminderService.updateReminder(id, { content: editingContent })
+      setReminders(reminders.map(r => (r.id === id ? updated : r)))
+      setEditingId(null)
+      setEditingContent('')
+      toast.success('Reminder updated!')
+    } catch (error) {
+      toast.error('Failed to update reminder')
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setEditingContent('')
   }
 
   const generateRecentActivity = (tasks, categories) => {
@@ -395,6 +461,24 @@ export default function OverviewPage() {
               </div>
             </div>
           </div>
+        </div>
+        {/* Sticky Note Reminders Section */}
+        <div className="mb-6 sm:mb-8">
+          <EnhancedStickyNotesSection
+            reminders={reminders}
+            setReminders={setReminders}
+            reminderInput={reminderInput}
+            setReminderInput={setReminderInput}
+            editingId={editingId}
+            setEditingId={setEditingId}
+            editingContent={editingContent}
+            setEditingContent={setEditingContent}
+            handleAddReminder={handleAddReminder}
+            handleDeleteReminder={handleDeleteReminder}
+            handleEditReminder={handleEditReminder}
+            handleSaveEdit={handleSaveEdit}
+            handleCancelEdit={handleCancelEdit}
+          />
         </div>
 
         {/* Content Grid */}

@@ -127,3 +127,21 @@ class InsightsResponse(BaseModel):
     high_priority_tasks: List[HighPriorityTask]
     recent_activities: List[Activity]
     weekly_insights: WeeklyInsights
+
+class ReminderBase(BaseModel):
+    content: str
+
+class ReminderCreate(ReminderBase):
+    pass
+
+class ReminderUpdate(BaseModel):
+    content: str
+
+class Reminder(ReminderBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
