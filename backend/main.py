@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, tasks, categories, tags, insights, users
+from routers import auth, tasks, categories, tags, insights, users, reminders
 from database import engine
 import models
 
@@ -39,6 +39,7 @@ app.include_router(categories.router)
 app.include_router(tags.router)
 app.include_router(insights.router)
 app.include_router(users.router)
+app.include_router(reminders.router)
 
 @app.get("/")
 async def root():

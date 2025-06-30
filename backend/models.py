@@ -25,6 +25,7 @@ class User(Base):
     categories = relationship("Category", back_populates="owner")
     tags = relationship("Tag", back_populates="owner")
     activities = relationship("Activity", back_populates="user")
+    reminders = relationship("Reminder", back_populates="user", cascade="all, delete-orphan")
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -77,3 +78,14 @@ class Activity(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="activities")
+
+class Reminder(Base):
+    __tablename__ = "reminders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    user = relationship("User", back_populates="reminders")
